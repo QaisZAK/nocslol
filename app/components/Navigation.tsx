@@ -51,7 +51,7 @@ export default function Navigation() {
                   href={item.href}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
                     isLive
-                      ? 'text-lol-gold border border-lol-gold/50 hover:bg-lol-gold/20'
+                      ? 'text-lol-gold hover:bg-lol-gold/20'
                       : isActive(item.href)
                       ? 'bg-lol-gold text-lol-dark border border-lol-gold'
                       : 'text-lol-accent hover:bg-lol-gold/20 hover:text-lol-gold border border-transparent hover:border-lol-gold/30'
@@ -102,7 +102,7 @@ export default function Navigation() {
                     onClick={() => setIsOpen(false)}
                     className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 ${
                       isLive
-                        ? 'text-lol-gold border border-lol-gold/50 hover:bg-lol-gold/20'
+                        ? 'text-lol-gold hover:bg-lol-gold/20'
                         : isActive(item.href)
                         ? 'bg-lol-gold text-lol-dark border border-lol-gold'
                         : 'text-lol-accent hover:bg-lol-gold/20 hover:text-lol-gold border border-transparent hover:border-lol-gold/30'

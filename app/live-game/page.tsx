@@ -1,1542 +1,1467 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
-import { Search, Users, Zap, AlertTriangle, CheckCircle, XCircle, Loader2, MapPin, Clock, Trophy, Sword, Shield, Eye, Target, Heart, Filter, ArrowUpDown, Calendar, Target as TargetIcon, TrendingUp, TrendingDown, RefreshCw, Brain, Sparkles } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { getAbilityImageUrl, getPassiveImageUrl } from '../champion-image-filenames'
+import { Heart, Sword, Target, Zap, Shield, Eye, Filter, SortAsc, SortDesc, User } from 'lucide-react'
+import { getSummonerSpellImageUrl, getSummonerSpellName } from '../summoner-spells'
 
-interface LiveGamePlayer {
-  summonerName?: string
-  championId: number
-  championName?: string
-  teamId: number
-  spell1Id: number
-  spell2Id: number
-  runes: any[]
-  rank: string
-  level: number
+interface SummonerData {
+  id: string
+  puuid: string
+  name: string
+  riotId: string
+  region: string
+  summonerLevel: number
+  profileIconId: number
 }
 
-interface LiveGame {
+interface LiveGameData {
   gameId: number
   gameMode: string
   gameType: string
-  mapId: number
-  participants: LiveGamePlayer[]
+  participants: Participant[]
   gameLength: number
-  platformId: string
 }
 
-interface MatchHistory {
+interface Participant {
+  summonerName: string
+  championId: number
+  championName: string
+  teamId: number
+  rank: string
+  level: number
+  profileIconId: number
+}
+
+interface ChampionAnalysis {
+  name: string
+  isDangerous: boolean
+  notes: string
+  dangerousAbilities: string[]
+  abilityDetails?: {
+    key: string
+    name: string
+    notes: string
+  }[]
+  basicAttacksDangerous: boolean
+}
+
+interface MatchData {
+  // Basic match info
   matchId: string
+  timestamp: string
   gameCreation: number
   gameDuration: number
+  gameEndTimestamp?: number
   gameMode: string
   gameType: string
   queueId: number
+  mapId: number
+  gameVersion: string
+  platformId: string
+  
+  // Champion info
   championName: string
-  championId: string
+  championId: number
+  championTransform?: number
+  champLevel: number
+  champExperience: number
+  
+  // Basic stats
+  cs: number
+  totalMinionsKilled: number
+  neutralMinionsKilled: number
+  win: boolean
+  
+  // Combat stats
   kills: number
   deaths: number
   assists: number
-  cs: number
-  win: boolean
+  doubleKills: number
+  tripleKills: number
+  quadraKills: number
+  pentaKills: number
+  killingSprees: number
+  largestKillingSpree: number
+  largestMultiKill: number
+  largestCriticalStrike: number
+  
+  // Damage stats
+  totalDamageDealt: number
+  totalDamageDealtToChampions: number
+  physicalDamageDealt: number
+  physicalDamageDealtToChampions: number
+  magicDamageDealt: number
+  magicDamageDealtToChampions: number
+  trueDamageDealt: number
+  trueDamageDealtToChampions: number
+  totalDamageTaken: number
+  physicalDamageTaken: number
+  magicDamageTaken: number
+  trueDamageTaken: number
+  damageSelfMitigated: number
+  
+  // Gold and economy
+  goldEarned: number
+  goldSpent: number
+  itemsPurchased: number
+  consumablesPurchased: number
+  
+  // Vision and objectives
+  visionScore: number
+  wardsPlaced: number
+  wardsKilled: number
+  visionWardsBoughtInGame: number
+  sightWardsBoughtInGame: number
+  detectorWardsPlaced: number
+  
+  // Objectives
+  dragonKills: number
+  baronKills: number
+  towerKills: number
+  inhibitorKills: number
+  nexusKills: number
+  objectivesStolen: number
+  objectivesStolenAssists: number
+  
+  // Team info
   teamId: number
+  teamPosition: string
+  individualPosition: string
+  role: string
+  lane: string
+  
+  // Summoner info
   summonerName: string
+  summonerId: string
+  summonerLevel: number
+  profileIcon: number
+  riotIdGameName: string
+  riotIdTagline: string
+  
+  // Summoner spells
+  summoner1Id: number
+  summoner2Id: number
+  summoner1Casts: number
+  summoner2Casts: number
+  spell1Casts: number
+  spell2Casts: number
+  spell3Casts: number
+  spell4Casts: number
+  
+  // Items (all 7 slots)
   items: number[]
-}
-
-interface CachedData {
-  summonerName: string
-  puuid: string
-  region: string
-  liveGame: LiveGame | null
-  matchHistory: MatchHistory[]
-  timestamp: number
-  lastRefresh: number
-}
-
-interface ChampionCSInfo {
-  name: string
-  abilities: {
-    key: string
-    name: string
-    givesCS: boolean
-    description: string
-    notes: string
-  }[]
-  basicAttacks: {
-    givesCS: boolean
-    description: string
-    notes: string
-  }
-  strategy: string
-}
-
-interface LiveGameAdvice {
-  summary: string
-  playerTips: string[]
-  enemyThreats: string[]
-  safeAbilities: string[]
-  dangerousAbilities: string[]
-  generalStrategy: string[]
+  
+  // Perks and runes
+  perks: any
+  
+  // Challenges (advanced stats)
+  challenges: any
+  
+  // Time and positioning
+  timePlayed: number
+  timeCCingOthers: number
+  totalTimeCCDealt: number
+  totalTimeSpentDead: number
+  longestTimeSpentLiving: number
+  
+  // Jungle and lane stats
+  totalAllyJungleMinionsKilled: number
+  totalEnemyJungleMinionsKilled: number
+  
+  // Healing and shielding
+  totalHeal: number
+  totalHealsOnTeammates: number
+  totalDamageShieldedOnTeammates: number
+  totalUnitsHealed: number
+  
+  // First blood/tower
+  firstBloodKill: boolean
+  firstBloodAssist: boolean
+  firstTowerKill: boolean
+  firstTowerAssist: boolean
+  
+  // Pings and communication
+  allInPings: number
+  assistMePings: number
+  commandPings: number
+  enemyMissingPings: number
+  enemyVisionPings: number
+  getBackPings: number
+  holdPings: number
+  needVisionPings: number
+  onMyWayPings: number
+  pushPings: number
+  visionClearedPings: number
+  
+  // Game state
+  bountyLevel: number
+  eligibleForProgression: boolean
+  gameEndedInEarlySurrender: boolean
+  gameEndedInSurrender: boolean
+  teamEarlySurrendered: boolean
+  
+  // Placement (for TFT/Arena)
+  placement?: number
+  playerAugment1?: number
+  playerAugment2?: number
+  playerAugment3?: number
+  playerAugment4?: number
+  playerSubteamId?: number
+  subteamPlacement?: number
+  
+  // Player scores (for various game modes)
+  playerScore0: number
+  playerScore1: number
+  playerScore2: number
+  playerScore3: number
+  playerScore4: number
+  playerScore5: number
+  playerScore6: number
+  playerScore7: number
+  playerScore8: number
+  playerScore9: number
+  playerScore10: number
+  playerScore11: number
+  
+  // Missions (for special game modes)
+  missions: any
 }
 
 export default function LiveGamePage() {
-  const [summonerName, setSummonerName] = useState('')
-  const [liveGame, setLiveGame] = useState<LiveGame | null>(null)
-  const [matchHistory, setMatchHistory] = useState<MatchHistory[]>([])
+  const [searchInput, setSearchInput] = useState('')
+  const [summonerData, setSummonerData] = useState<SummonerData | null>(null)
+  const [liveGame, setLiveGame] = useState<LiveGameData | null>(null)
+  const [championAnalysis, setChampionAnalysis] = useState<ChampionAnalysis[]>([])
+  const [matchHistory, setMatchHistory] = useState<MatchData[]>([])
+  const [matchHistoryLoading, setMatchHistoryLoading] = useState(false)
+  const [expandedMatches, setExpandedMatches] = useState<Set<number>>(new Set())
+  const [summonerSpells, setSummonerSpells] = useState<Record<number, { imageUrl: string; name: string }>>({})
   const [loading, setLoading] = useState(false)
-  const [loadingHistory, setLoadingHistory] = useState(false)
-  const [error, setError] = useState<string>('')
-  const [searchHistory, setSearchHistory] = useState<string[]>([])
-  const [lastRefresh, setLastRefresh] = useState<number>(0)
-  const [refreshCooldown, setRefreshCooldown] = useState<number>(0)
-  const [currentSummonerData, setCurrentSummonerData] = useState<{ puuid: string; region: string } | null>(null)
-  const [isFromCache, setIsFromCache] = useState<boolean>(false)
-  const [championData, setChampionData] = useState<Record<string, ChampionCSInfo>>({})
-  const [aiAdvice, setAiAdvice] = useState<LiveGameAdvice | null>(null)
-  const [loadingAdvice, setLoadingAdvice] = useState(false)
+  const [error, setError] = useState('')
 
-  // Filter and Sort States
-  const [showFilters, setShowFilters] = useState(false)
-  const [filters, setFilters] = useState({
-    result: 'all', // 'all', 'win', 'loss'
-    csRange: 'all', // 'all', '0', '1-2', '3-5', '6-9'
-    gameMode: 'all', // 'all', 'CLASSIC', 'ARAM', 'URF'
-    champion: '',
-    dateRange: 'all' // 'all', 'today', 'week', 'month'
-  })
-  const [sortBy, setSortBy] = useState('date') // 'date', 'cs', 'kda', 'duration', 'champion'
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
-  // Load search history from localStorage on mount
-  useEffect(() => {
-    const savedHistory = localStorage.getItem('nocslol-search-history')
-    if (savedHistory) {
-      try {
-        const history = JSON.parse(savedHistory)
-        setSearchHistory(history.slice(0, 3)) // Keep only last 3
-      } catch (error) {
-        console.error('Failed to parse search history:', error)
-      }
-    }
-  }, [])
-
-  // Load champion data on mount
-  useEffect(() => {
-    loadChampionData()
-  }, [])
-
-  // Save search history to localStorage
-  const saveSearchHistory = (name: string) => {
-    const newHistory = [name, ...searchHistory.filter(item => item !== name)].slice(0, 3)
-    setSearchHistory(newHistory)
-    localStorage.setItem('nocslol-search-history', JSON.stringify(newHistory))
-  }
-
-  // Load champion data from JSON
-  const loadChampionData = async () => {
-    try {
-      const response = await fetch('/data/champions.json')
-      if (!response.ok) {
-        throw new Error(`Failed to fetch champion data: ${response.status}`)
-      }
-      
-      const data = await response.json()
-      if (!data || !data.champions || !Array.isArray(data.champions)) {
-        throw new Error('Invalid champion data format')
-      }
-      
-      const championMap: Record<string, ChampionCSInfo> = {}
-      
-      data.champions.forEach((champ: any) => {
-        if (champ && champ.name && champ.csMechanics) {
-          championMap[champ.name.toLowerCase()] = champ.csMechanics
-        }
-      })
-      
-      console.log(`Loaded ${Object.keys(championMap).length} champions with CS mechanics`)
-      setChampionData(championMap)
-    } catch (error) {
-      console.error('Error loading champion data:', error)
-      setChampionData({}) // Set empty object to prevent further attempts
-    }
-  }
-
-  // Get AI advice for live game
-  const getAIAdvice = async (liveGame: LiveGame) => {
-    if (!liveGame || !liveGame.participants || liveGame.participants.length === 0) {
-      console.warn('Invalid live game data for AI advice')
+  const handleSearch = async () => {
+    if (!searchInput.trim()) {
+      setError('Please enter a summoner name')
       return
     }
 
-    if (!championData || Object.keys(championData).length === 0) {
-      await loadChampionData()
-    }
-
-    try {
-      setLoadingAdvice(true)
-      
-      // Debug: Log the live game data structure
-      console.log('Live Game Data:', liveGame)
-      console.log('Participants:', liveGame.participants)
-      console.log('Searching for summoner:', summonerName)
-      
-      // Find the searched summoner in the game
-      // Since the API doesn't return summoner names, we'll use the first player as the searched player
-      const searchedPlayer = liveGame.participants[0]
-      
-      if (!searchedPlayer) {
-        console.warn('No participants found in game, skipping AI advice')
-        return
-      }
-
-      console.log('Using player for AI advice:', searchedPlayer)
-
-      // Validate that we have the required data
-      if (!searchedPlayer.championName || !searchedPlayer.teamId) {
-        console.warn('Missing required player data for AI advice')
-        return
-      }
-
-      const playerTeam = liveGame.participants
-        .filter(p => p && p.teamId === searchedPlayer.teamId && p.championName)
-        .map(p => p.championName)
-      
-      const enemyTeam = liveGame.participants
-        .filter(p => p && p.teamId !== searchedPlayer.teamId && p.championName)
-        .map(p => p.championName)
-
-      // Check if we have valid team data
-      if (playerTeam.length === 0 || enemyTeam.length === 0) {
-        console.warn('Invalid team data for AI advice')
-        return
-      }
-
-      // Filter champion data to only include champions in the game
-      const gameChampionData: Record<string, ChampionCSInfo> = {}
-      ;[...playerTeam, ...enemyTeam].forEach(champName => {
-        if (champName) {
-          const champKey = champName.toLowerCase()
-          if (championData[champKey]) {
-            gameChampionData[champKey] = championData[champKey]
-          }
-        }
-      })
-
-      // Only proceed if we have some champion data
-      if (Object.keys(gameChampionData).length === 0) {
-        console.warn('No champion CS data available for AI advice')
-        return
-      }
-
-      const response = await fetch('/api/gemini/advice', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          playerChampion: searchedPlayer.championName,
-          playerTeam,
-          enemyTeam,
-          championData: gameChampionData
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to get AI advice')
-      }
-
-      const advice = await response.json()
-      setAiAdvice(advice)
-    } catch (error) {
-      console.error('Error getting AI advice:', error)
-      // Don't set error for AI advice failures - it's not critical
-    } finally {
-      setLoadingAdvice(false)
-    }
-  }
-
-  // Check cache for existing data
-  const getCachedData = (summonerName: string): CachedData | null => {
-    if (typeof window === 'undefined') return null
-    
-    const cached = localStorage.getItem(`nocslol-cache-${summonerName}`)
-    if (cached) {
-      try {
-        const data: CachedData = JSON.parse(cached)
-        const now = Date.now()
-        const cacheAge = now - data.timestamp
-        const refreshAge = now - data.lastRefresh
-        
-        // Cache is valid for 5 minutes, refresh cooldown is 30 seconds
-        if (cacheAge < 5 * 60 * 1000 && refreshAge > 30 * 1000) {
-          return data
-        }
-      } catch (error) {
-        console.error('Failed to parse cached data:', error)
-      }
-    }
-    return null
-  }
-
-  // Save data to cache
-  const saveCachedData = (summonerName: string, data: Omit<CachedData, 'timestamp' | 'lastRefresh'>) => {
-    if (typeof window === 'undefined') return
-    
-    const cacheData: CachedData = {
-      ...data,
-      timestamp: Date.now(),
-      lastRefresh: Date.now()
-    }
-    localStorage.setItem(`nocslol-cache-${summonerName}`, JSON.stringify(cacheData))
-  }
-
-  const searchLiveGame = async (forceRefresh = false) => {
-    if (!summonerName.trim()) return
-
-    // Check cache first (unless forcing refresh)
-    if (!forceRefresh) {
-      const cached = getCachedData(summonerName)
-      if (cached) {
-        setLiveGame(cached.liveGame)
-        setMatchHistory(cached.matchHistory)
-        setCurrentSummonerData({ puuid: cached.puuid, region: cached.region })
-        setLastRefresh(cached.lastRefresh)
-        setError('')
-        setIsFromCache(true)
-        saveSearchHistory(summonerName)
-        // Get AI advice for cached live game
-        if (cached.liveGame) {
-          getAIAdvice(cached.liveGame)
-        }
-        return
-      }
-    }
-    
-    setIsFromCache(false)
-
     setLoading(true)
     setError('')
-    setLiveGame(null)
-    setMatchHistory([])
+         setSummonerData(null)
+     setLiveGame(null)
+     setChampionAnalysis([])
+     setMatchHistory([])
 
     try {
-      // First, get the summoner's PUUID
-      const summonerResponse = await fetch(`/api/riot/summoner?name=${encodeURIComponent(summonerName)}`)
+      // Search for summoner using the full input (backend will split by #)
+      const summonerResponse = await fetch(`/api/riot/summoner?name=${encodeURIComponent(searchInput)}`)
+      
       if (!summonerResponse.ok) {
-        throw new Error('Summoner not found or not in game')
+        const errorData = await summonerResponse.json()
+        throw new Error(errorData.error || 'Failed to find summoner')
       }
 
-      const summonerData = await summonerResponse.json()
-      setCurrentSummonerData({ puuid: summonerData.puuid, region: summonerData.region })
-      
-      // Add to search history
-      saveSearchHistory(summonerName)
-      
-      // Fetch match history for low CS games (always fetch this)
-      await fetchMatchHistory(summonerData.puuid, summonerData.region)
-      
-      // Then try to get the live game data
-      const gameResponse = await fetch(`/api/riot/live-game?puuid=${summonerData.puuid}&region=${summonerData.region}`)
-      let liveGameData = null
-      if (gameResponse.ok) {
-        liveGameData = await gameResponse.json()
-        setLiveGame(liveGameData)
-        // Get AI advice for the live game
-        getAIAdvice(liveGameData)
-      } else if (gameResponse.status === 404) {
-        // No active game, but that's okay - we still have match history
-        setError('No active game found for this summoner')
-      } else {
-        throw new Error(`Failed to get live game data: ${gameResponse.status}`)
+      const summoner = await summonerResponse.json()
+      console.log('Summoner data received:', summoner)
+      setSummonerData(summoner)
+
+      // Check for live game
+      try {
+        const liveGameResponse = await fetch(`/api/riot/live-game?puuid=${summoner.puuid}&region=${summoner.region}`)
+        if (liveGameResponse.ok) {
+          const gameData = await liveGameResponse.json()
+          setLiveGame(gameData)
+          
+          // Get champion analysis for the live game
+          const championNames = gameData.participants.map((p: any) => p.championName)
+          console.log('Getting analysis for champions:', championNames)
+          const analysis = await getChampionAnalysis(championNames)
+          console.log('Analysis result:', analysis)
+          setChampionAnalysis(analysis)
+        }
+      } catch (error) {
+        // No live game found, this is normal
+        console.log('No live game found')
+        setChampionAnalysis([])
       }
 
-      // Cache the results
-      saveCachedData(summonerName, {
-        summonerName,
-        puuid: summonerData.puuid,
-        region: summonerData.region,
-        liveGame: liveGameData,
-        matchHistory: matchHistory
-      })
-
-      setLastRefresh(Date.now())
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to find live game')
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'An error occurred')
     } finally {
       setLoading(false)
     }
   }
 
-  const refreshData = async () => {
-    if (!currentSummonerData || !summonerName) return
-    
-    const now = Date.now()
-    const timeSinceLastRefresh = now - lastRefresh
-    
-    // 30 second cooldown
-    if (timeSinceLastRefresh < 30000) {
-      const remainingCooldown = Math.ceil((30000 - timeSinceLastRefresh) / 1000)
-      setRefreshCooldown(remainingCooldown)
-      return
-    }
-
-    await searchLiveGame(true)
-  }
-
-  // Update cooldown timer
-  useEffect(() => {
-    if (refreshCooldown > 0) {
-      const timer = setTimeout(() => {
-        setRefreshCooldown(prev => Math.max(0, prev - 1))
-      }, 1000)
-      return () => clearTimeout(timer)
-    }
-  }, [refreshCooldown])
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      searchLiveGame(false)
-    }
-  }
-
-  const handleSearchHistoryClick = (name: string) => {
-    setSummonerName(name)
-    searchLiveGame(false)
-  }
-
-  const fetchMatchHistory = async (puuid: string, region: string) => {
-    setLoadingHistory(true)
+  const getChampionAnalysis = async (championNames: string[]): Promise<ChampionAnalysis[]> => {
     try {
-      const response = await fetch(`/api/riot/match-history?puuid=${puuid}&region=${region}`)
+      const response = await fetch(`/api/riot/champion-analysis?champions=${championNames.join(',')}`)
       if (response.ok) {
         const data = await response.json()
-        setMatchHistory(data.matches || [])
+        return data.analysis
+      } else {
+        console.error('Champion analysis API returned error:', response.status)
       }
     } catch (error) {
-      console.error('Failed to fetch match history:', error)
-    } finally {
-      setLoadingHistory(false)
+      console.error('Failed to get champion analysis:', error)
     }
+    
+         // Fallback analysis
+     return championNames.map(name => ({
+       name,
+       isDangerous: false,
+       dangerousAbilities: [],
+       abilityDetails: [],
+       notes: 'Analysis unavailable. Use caution with abilities near minions.',
+       basicAttacksDangerous: true
+     }))
   }
 
-  const getChampionImage = (championName: string) => {
-    if (!championName) return ''
-    return `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${championName}_0.jpg`
-  }
-
-  const getChampionPortrait = (championName: string) => {
-    if (!championName) return ''
-    return `https://ddragon.leagueoflegends.com/cdn/15.17.1/img/champion/${championName}.png`
-  }
-
-  // Convert champion ID to name (since the API returns IDs)
-  const getChampionName = (championId: number) => {
-    const championMap: { [key: number]: string } = {
-      98: 'Shen',
-      266: 'Aatrox',
-      103: 'Ahri',
-      84: 'Akali',
-      12: 'Alistar',
-      32: 'Amumu',
-      34: 'Anivia',
-      1: 'Annie',
-      523: 'Aphelios',
-      22: 'Ashe',
-      136: 'Aurelion Sol',
-      268: 'Azir',
-      432: 'Bard',
-      200: 'Bel\'Veth',
-      53: 'Blitzcrank',
-      63: 'Brand',
-      201: 'Braum',
-      233: 'Briar',
-      51: 'Caitlyn',
-      164: 'Camille',
-      69: 'Cassiopeia',
-      31: 'Cho\'Gath',
-      42: 'Corki',
-      122: 'Darius',
-      131: 'Diana',
-      119: 'Draven',
-      36: 'Dr. Mundo',
-      245: 'Ekko',
-      60: 'Elise',
-      28: 'Evelynn',
-      81: 'Ezreal',
-      9: 'Fiddlesticks',
-      114: 'Fiora',
-      105: 'Fizz',
-      3: 'Galio',
-      41: 'Gangplank',
-      86: 'Garen',
-      150: 'Gnar',
-      79: 'Gragas',
-      104: 'Graves',
-      887: 'Gwen',
-      120: 'Hecarim',
-      74: 'Heimerdinger',
-      420: 'Illaoi',
-      39: 'Irelia',
-      427: 'Ivern',
-      40: 'Janna',
-      59: 'Jarvan IV',
-      24: 'Jax',
-      126: 'Jayce',
-      202: 'Jhin',
-      222: 'Jinx',
-      145: 'Kai\'Sa',
-      429: 'Kalista',
-      43: 'Karma',
-      30: 'Karthus',
-      38: 'Kassadin',
-      55: 'Katarina',
-      10: 'Kayle',
-      141: 'Kayn',
-      85: 'Kennen',
-      121: 'Kha\'Zix',
-      203: 'Kindred',
-      240: 'Kled',
-      96: 'Kog\'Maw',
-      7: 'LeBlanc',
-      64: 'Lee Sin',
-      89: 'Leona',
-      876: 'Lillia',
-      127: 'Lissandra',
-      236: 'Lucian',
-      117: 'Lux',
-      54: 'Malphite',
-      90: 'Malzahar',
-      57: 'Maokai',
-      11: 'Master Yi',
-      21: 'Miss Fortune',
-      62: 'Wukong',
-      82: 'Mordekaiser',
-      25: 'Morgana',
-      267: 'Nami',
-      75: 'Nasus',
-      111: 'Nautilus',
-      518: 'Neeko',
-      76: 'Nidalee',
-      56: 'Nocturne',
-      20: 'Nunu',
-      2: 'Olaf',
-      61: 'Orianna',
-      516: 'Ornn',
-      80: 'Pantheon',
-      78: 'Poppy',
-      555: 'Pyke',
-      133: 'Quinn',
-      497: 'Rakan',
-      33: 'Rammus',
-      421: 'Rek\'Sai',
-      526: 'Rell',
-      888: 'Renata Glasc',
-      58: 'Renekton',
-      107: 'Rengar',
-      92: 'Riven',
-      68: 'Rumble',
-      13: 'Ryze',
-      360: 'Samira',
-      113: 'Sejuani',
-      235: 'Senna',
-      147: 'Seraphine',
-      875: 'Sett',
-      35: 'Shaco',
-      102: 'Shyvana',
-      27: 'Singed',
-      14: 'Sion',
-      15: 'Sivir',
-      72: 'Skarner',
-      37: 'Sona',
-      16: 'Soraka',
-      50: 'Swain',
-      517: 'Sylas',
-      134: 'Syndra',
-      223: 'Tahm Kench',
-      163: 'Taliyah',
-      91: 'Talon',
-      44: 'Taric',
-      17: 'Teemo',
-      412: 'Thresh',
-      18: 'Tristana',
-      48: 'Trundle',
-      23: 'Tryndamere',
-      4: 'Twisted Fate',
-      29: 'Twitch',
-      77: 'Udyr',
-      6: 'Urgot',
-      110: 'Varus',
-      67: 'Vayne',
-      45: 'Veigar',
-      161: 'Vel\'Koz',
-      711: 'Vex',
-      254: 'Vi',
-      234: 'Viego',
-      112: 'Viktor',
-      8: 'Vladimir',
-      106: 'Volibear',
-      19: 'Warwick',
-      498: 'Xayah',
-      101: 'Xerath',
-      5: 'Xin Zhao',
-      157: 'Yasuo',
-      777: 'Yone',
-      83: 'Yorick',
-      350: 'Yuumi',
-      154: 'Zac',
-      238: 'Zed',
-      221: 'Zeri',
-      115: 'Ziggs',
-      26: 'Zilean',
-      142: 'Zoe',
-      143: 'Zyra'
-    }
-    return championMap[championId] || `Champion ${championId}`
-  }
-
-  const getTeamColor = (teamId: number) => {
-    return teamId === 100 ? 'border-lol-blue/50 bg-lol-blue/10' : 'border-lol-red/50 bg-lol-red/10'
-  }
-
-  const getTeamName = (teamId: number) => {
-    return teamId === 100 ? 'Blue Team' : 'Red Team'
-  }
-
-  const formatGameTime = (seconds: number) => {
+  const formatGameDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60)
     const remainingSeconds = seconds % 60
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
   }
 
-  const getGameModeName = (gameMode: string) => {
-    const modeMap: { [key: string]: string } = {
-      'CLASSIC': 'Summoner\'s Rift',
-      'ARAM': 'Howling Abyss',
-      'URF': 'Ultra Rapid Fire',
-      'TFT': 'Teamfight Tactics'
-    }
-    return modeMap[gameMode] || gameMode
+  const getProfileIconUrl = (profileIconId: number) => {
+    return `https://ddragon.leagueoflegends.com/cdn/15.17.1/img/profileicon/${profileIconId}.png`
   }
 
-  // Filtered and Sorted Match History
-  const filteredAndSortedMatches = useMemo(() => {
-    let filtered = [...matchHistory]
+  const getChampionImageUrl = (championName: string) => {
+    // Convert champion name to URL-friendly format
+    const formattedName = championName
+      .replace(/['\s]/g, '') // Remove apostrophes and spaces
+      .replace(/\./g, '') // Remove dots
+      .replace(/&/g, '') // Remove ampersands
+      .replace(/[^\w]/g, '') // Remove any other special characters
+    
+    return `https://ddragon.leagueoflegends.com/cdn/15.17.1/img/champion/${formattedName}.png`
+  }
 
-    // Apply filters
-    if (filters.result !== 'all') {
-      filtered = filtered.filter(match => 
-        filters.result === 'win' ? match.win : !match.win
-      )
-    }
-
-    if (filters.csRange !== 'all') {
-      switch (filters.csRange) {
-        case '0':
-          filtered = filtered.filter(match => match.cs === 0)
-          break
-        case '1-2':
-          filtered = filtered.filter(match => match.cs >= 1 && match.cs <= 2)
-          break
-        case '3-5':
-          filtered = filtered.filter(match => match.cs >= 3 && match.cs <= 5)
-          break
-        case '6-9':
-          filtered = filtered.filter(match => match.cs >= 6 && match.cs <= 9)
-          break
+  const fetchMatchHistory = async () => {
+    if (!summonerData?.puuid || !summonerData?.region) return
+    
+    setMatchHistoryLoading(true)
+    try {
+      const response = await fetch(`/api/riot/match-history?puuid=${summonerData.puuid}&region=${summonerData.region}`)
+      if (response.ok) {
+        const data = await response.json()
+        setMatchHistory(data.matches || [])
+        
+        // Load summoner spell data for all matches
+        await loadSummonerSpells(data.matches || [])
       }
+    } catch (error) {
+      console.error('Failed to fetch match history:', error)
+    } finally {
+      setMatchHistoryLoading(false)
     }
+  }
 
-    if (filters.gameMode !== 'all') {
-      filtered = filtered.filter(match => match.gameMode === filters.gameMode)
-    }
-
-    if (filters.champion) {
-      filtered = filtered.filter(match => 
-        match.championName.toLowerCase().includes(filters.champion.toLowerCase())
-      )
-    }
-
-    if (filters.dateRange !== 'all') {
-      const now = Date.now()
-      const dayMs = 24 * 60 * 60 * 1000
-      const weekMs = 7 * dayMs
-      const monthMs = 30 * dayMs
-
-      filtered = filtered.filter(match => {
-        const matchDate = match.gameCreation
-        switch (filters.dateRange) {
-          case 'today':
-            return (now - matchDate) <= dayMs
-          case 'week':
-            return (now - matchDate) <= weekMs
-          case 'month':
-            return (now - matchDate) <= monthMs
-          default:
-            return true
+  // Load summoner spell data for matches
+  const loadSummonerSpells = async (matches: MatchData[]) => {
+    const spellsData: Record<number, { imageUrl: string; name: string }> = {}
+    
+    for (const match of matches) {
+      try {
+        // Load spell 1
+        if (match.summoner1Id) {
+          const imageUrl = await getSummonerSpellImageUrl(match.summoner1Id)
+          const name = await getSummonerSpellName(match.summoner1Id)
+          if (imageUrl && name) {
+            spellsData[match.summoner1Id] = { imageUrl, name }
+          }
         }
-      })
-    }
-
-    // Apply sorting
-    filtered.sort((a, b) => {
-      let aValue: any
-      let bValue: any
-
-      switch (sortBy) {
-        case 'date':
-          aValue = a.gameCreation
-          bValue = b.gameCreation
-          break
-        case 'cs':
-          aValue = a.cs
-          bValue = b.cs
-          break
-        case 'kda':
-          aValue = (a.kills + a.assists) / Math.max(a.deaths, 1)
-          bValue = (b.kills + b.assists) / Math.max(b.deaths, 1)
-          break
-        case 'duration':
-          aValue = a.gameDuration
-          bValue = b.gameDuration
-          break
-        case 'champion':
-          aValue = a.championName.toLowerCase()
-          bValue = b.championName.toLowerCase()
-          break
-        default:
-          aValue = a.gameCreation
-          bValue = b.gameCreation
+        
+        // Load spell 2
+        if (match.summoner2Id) {
+          const imageUrl = await getSummonerSpellImageUrl(match.summoner2Id)
+          const name = await getSummonerSpellName(match.summoner2Id)
+          if (imageUrl && name) {
+            spellsData[match.summoner2Id] = { imageUrl, name }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load summoner spell data:', error)
       }
-
-      if (sortOrder === 'asc') {
-        return aValue > bValue ? 1 : -1
-      } else {
-        return aValue < bValue ? 1 : -1
-      }
-    })
-
-    return filtered
-  }, [matchHistory, filters, sortBy, sortOrder])
-
-  // Helper function to get filter summary
-  const getFilterSummary = () => {
-    const activeFilters = []
-    if (filters.result !== 'all') activeFilters.push(filters.result === 'win' ? 'Wins Only' : 'Losses Only')
-    if (filters.csRange !== 'all') {
-      const csLabels = { '0': 'Perfect (0 CS)', '1-2': 'Low (1-2 CS)', '3-5': 'Medium (3-5 CS)', '6-9': 'High (6-9 CS)' }
-      activeFilters.push(csLabels[filters.csRange as keyof typeof csLabels])
     }
-    if (filters.gameMode !== 'all') {
-      const modeLabels = { 'CLASSIC': 'Summoner\'s Rift', 'ARAM': 'ARAM', 'URF': 'URF' }
-      activeFilters.push(modeLabels[filters.gameMode as keyof typeof modeLabels])
+    
+    setSummonerSpells(spellsData)
+  }
+
+  // Fetch match history when summoner data changes
+  useEffect(() => {
+    if (summonerData?.puuid && summonerData?.region) {
+      fetchMatchHistory()
     }
-    if (filters.champion) activeFilters.push(`Champion: ${filters.champion}`)
-    if (filters.dateRange !== 'all') {
-      const dateLabels = { 'today': 'Today', 'week': 'This Week', 'month': 'This Month' }
-      activeFilters.push(dateLabels[filters.dateRange as keyof typeof dateLabels])
+  }, [summonerData])
+
+  const toggleMatchExpansion = (index: number) => {
+    const newExpanded = new Set(expandedMatches)
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index)
+    } else {
+      newExpanded.add(index)
     }
-    return activeFilters
+    setExpandedMatches(newExpanded)
+  }
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
+    return num.toString()
   }
 
   return (
-    <div className="min-h-screen bg-lol-dark">
-      {/* Header */}
-      <div className="bg-lol-darker border-b border-lol-gold/30 py-8">
-        <div className="max-w-6xl mx-auto px-4">
-          <h1 className="text-5xl font-bold text-lol-gold mb-4 text-shadow">
-            Live Game Lookup
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-500/20 text-yellow-100 border border-yellow-400/40 mb-4">
+            🚧 Work in Progress
+          </div>
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">
+            Live Game Analysis
           </h1>
-          <p className="text-xl text-lol-accent/80">
-            Search for a summoner to find their current live game
+          <p className="text-slate-300 text-lg max-w-2xl mx-auto">
+            Analyze enemy champions and their CS mechanics in real-time during your League of Legends matches
           </p>
-        </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Work in Progress Banner */}
-        <div className="mb-8 relative overflow-hidden">
-          <div className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-400 p-4 border-4 border-black shadow-lg">
-            <div className="flex items-center justify-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-black rounded-full animate-pulse"></div>
-                <div className="w-3 h-3 bg-black rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-                <div className="w-3 h-3 bg-black rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
-              </div>
-              <span className="text-black font-bold text-lg tracking-wider uppercase">Work in Progress</span>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-black rounded-full animate-pulse" style={{animationDelay: '0.6s'}}></div>
-                <div className="w-3 h-3 bg-black rounded-full animate-pulse" style={{animationDelay: '0.8s'}}></div>
-                <div className="w-3 h-3 bg-black rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
-              </div>
-            </div>
-            <div className="mt-2 text-center">
-              <span className="text-black font-semibold text-sm">🚧 Live Game Features Under Development 🚧</span>
-            </div>
-          </div>
-          {/* Crime scene tape diagonal stripes */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="w-full h-full" style={{
-              background: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px)'
-            }}></div>
-          </div>
         </div>
 
         {/* Search Section */}
-        <div className="lol-card p-6 mb-8 bg-lol-darker/50 border border-lol-gold/30">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 mb-8 border border-white/10 shadow-2xl">
+          
+          <div className="flex gap-4 mb-4">
             <div className="flex-1">
+              <label className="block text-sm font-medium mb-2 text-slate-200">Riot ID</label>
               <input
                 type="text"
-                placeholder="Enter summoner name (e.g., MeatKebab#HALAL)"
-                value={summonerName}
-                onChange={(e) => setSummonerName(e.target.value)}
-                onKeyPress={handleKeyPress}
-                className="w-full px-4 py-3 bg-lol-blue/80 border border-lol-gold/30 rounded-lg text-lol-accent placeholder-lol-accent/40 focus:outline-none focus:border-lol-gold/60 font-medium"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Enter Riot ID (e.g., MeatKebab#HALAL)"
+                className="w-full px-6 py-4 bg-slate-800/50 border border-slate-600/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-white placeholder-slate-400 transition-all duration-200"
               />
             </div>
-            <button
-              onClick={() => searchLiveGame(false)}
-              disabled={loading || !summonerName.trim()}
-              className="px-4 py-3 bg-lol-gold text-lol-dark rounded-lg hover:bg-lol-gold/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Search className="w-5 h-5" />
-              )}
-            </button>
-          </div>
-
-          {/* Search History */}
-          {searchHistory.length > 0 && (
-            <div className="mt-4">
-              <p className="text-sm text-lol-gold font-medium mb-2">Recent searches:</p>
-              <div className="flex flex-wrap gap-2">
-                {searchHistory.map((name, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSearchHistoryClick(name)}
-                    className="px-3 py-1 bg-lol-gold text-lol-dark text-sm rounded hover:bg-lol-gold/80 transition-colors font-medium"
-                  >
-                    {name}
-                  </button>
-                ))}
-              </div>
+            <div className="flex items-end">
+              <button
+                onClick={handleSearch}
+                disabled={loading}
+                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-slate-600 disabled:to-slate-700 rounded-xl font-medium transition-all duration-200 transform hover:scale-105 disabled:transform-none shadow-lg"
+              >
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Searching...
+                  </div>
+                ) : (
+                  'Search'
+                )}
+              </button>
             </div>
+          </div>
+          
+          {error && (
+            <div className="text-red-300 text-sm bg-red-500/20 border border-red-500/30 rounded-lg p-3">{error}</div>
           )}
         </div>
 
-        {/* Error Display */}
-        {error && (
-          <div className="lol-card p-6 mb-8 border-2 border-lol-red/30">
-            <div className="flex items-center gap-3 text-lol-red">
-              <AlertTriangle className="w-6 h-6" />
-              <h3 className="text-lg font-semibold">
-                {error.includes('No active game found') ? 'Summoner Found - Not in Game' : 'Error'}
-              </h3>
-            </div>
-            <p className="text-lol-accent/80 mt-2">{error}</p>
-            <p className="text-lol-accent/60 text-sm mt-2">
-              {error.includes('No active game found') 
-                ? 'The summoner was found but is not currently in an active game. Try again when they start playing.'
-                : 'Make sure the summoner name is correct and they are currently in an active game.'
-              }
-            </p>
-          </div>
-        )}
+                 {summonerData && (
+           <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 shadow-2xl">
+             {/* Summoner Info */}
+             <div className="flex items-center gap-6 mb-8">
+               <div className="relative">
+                 <img
+                   src={getProfileIconUrl(summonerData.profileIconId)}
+                   alt="Profile Icon"
+                   className="w-20 h-20 rounded-full border-4 border-blue-500/50 shadow-lg"
+                 />
+                 <div className="absolute -bottom-2 -right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                   {summonerData.summonerLevel}
+                 </div>
+               </div>
+               <div>
+                 <h2 className="text-3xl font-bold text-white mb-2">
+                   {summonerData.riotId}
+                 </h2>
+                 <div className="flex items-center gap-4 text-slate-300">
+                   <div className="flex items-center gap-2">
+                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                       <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                     </svg>
+                     {summonerData.region.toUpperCase()}
+                   </div>
+                   <div className="flex items-center gap-2">
+                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                       <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                     </svg>
+                     Level {summonerData.summonerLevel}
+                   </div>
+                 </div>
+               </div>
+             </div>
 
-        {/* Live Game Display */}
-        {liveGame && (
-          <div className="space-y-6">
-            {/* Game Info Header */}
-            <div className="lol-card p-6 bg-lol-darker/50 border border-lol-gold/30">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <MapPin className="w-6 h-6 text-lol-gold" />
+             {/* Live Game Analysis */}
+             <div>
+               {liveGame ? (
+                 <div>
+                  
+
+                  {/* Enemy Team */}
                   <div>
-                    <h2 className="text-2xl font-bold text-lol-gold">{getGameModeName(liveGame.gameMode)}</h2>
-                    <p className="text-lol-accent/70 font-medium">Game ID: {liveGame.gameId}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-lol-accent/60" />
-                    <span className="text-lol-accent font-medium">{formatGameTime(liveGame.gameLength)}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users className="w-5 h-5 text-lol-accent/60" />
-                    <span className="text-lol-accent font-medium">{liveGame.participants.length} players</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Teams */}
-            <div className="grid lg:grid-cols-2 gap-6">
-                              {/* Blue Team */}
-        <div className="lol-card p-6 bg-lol-darker/50 border border-lol-blue/30">
-          <h3 className="text-xl font-bold text-lol-blue mb-4 flex items-center">
-            <Shield className="w-5 h-5 mr-2" />
-            Blue Team
-          </h3>
-          <div className="space-y-3">
-            {liveGame.participants
-              .filter(player => player && player.teamId === 100 && player.championName)
-              .map((player, index) => {
-                console.log('Blue Team Player:', player)
-                return (
-                  <div key={index} className="flex items-center gap-4 p-4 bg-lol-blue/20 rounded-lg border border-lol-blue/50 hover:bg-lol-blue/30 transition-colors">
-                    <div className="relative">
-                      <img
-                        src={getChampionPortrait(getChampionName(player.championId))}
-                        alt={getChampionName(player.championId)}
-                        className="w-16 h-16 rounded-lg object-cover border-2 border-lol-blue"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement
-                          target.style.display = 'none'
-                          target.nextElementSibling?.classList.remove('hidden')
-                        }}
-                      />
-                      <div className="hidden w-16 h-16 rounded-lg border-2 border-lol-blue bg-lol-blue flex items-center justify-center text-white font-bold text-lg">
-                        {getChampionName(player.championId).charAt(0)}
-                      </div>
-                      <div className="absolute -bottom-1 -right-1 bg-lol-blue text-white text-xs px-2 py-1 rounded-full font-bold">
-                        {player.level}
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-bold text-lol-accent text-lg">{summonerName || 'You'}</div>
-                      <div className="text-lol-blue font-semibold text-base">{getChampionName(player.championId)}</div>
-                      <div className="text-xs text-lol-accent/70 mt-1 font-medium">{player.rank || 'Unranked'}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs text-lol-blue font-semibold bg-lol-blue/30 px-3 py-2 rounded-lg border border-lol-blue/50">
-                        {player.spell1Id} + {player.spell2Id}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-          </div>
-        </div>
-
-                              {/* Red Team */}
-        <div className="lol-card p-6 bg-lol-darker/50 border border-lol-red/30">
-          <h3 className="text-xl font-bold text-lol-red mb-4 flex items-center">
-            <Sword className="w-5 h-5 mr-2" />
-            Red Team
-          </h3>
-          <div className="space-y-3">
-            {liveGame.participants
-              .filter(player => player && player.teamId === 200 && player.championName)
-              .map((player, index) => {
-                console.log('Red Team Player:', player)
-                return (
-                  <div key={index} className="flex items-center gap-4 p-4 bg-lol-red/20 rounded-lg border border-lol-red/50 hover:bg-lol-red/30 transition-colors">
-                    <div className="relative">
-                      <img
-                        src={getChampionPortrait(getChampionName(player.championId))}
-                        alt={getChampionName(player.championId)}
-                        className="w-16 h-16 rounded-lg object-cover border-2 border-lol-red"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement
-                          target.style.display = 'none'
-                          target.nextElementSibling?.classList.remove('hidden')
-                        }}
-                      />
-                      <div className="hidden w-16 h-16 rounded-lg border-2 border-lol-red bg-lol-red flex items-center justify-center text-white font-bold text-lg">
-                        {getChampionName(player.championId).charAt(0)}
-                      </div>
-                      <div className="absolute -bottom-1 -right-1 bg-lol-red text-white text-xs px-2 py-1 rounded-full font-bold">
-                        {player.level}
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-bold text-lol-accent text-lg">{'Enemy Player'}</div>
-                      <div className="text-lol-red font-semibold text-base">{getChampionName(player.championId)}</div>
-                      <div className="text-xs text-lol-accent/70 mt-1 font-medium">{player.rank || 'Unranked'}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs text-lol-red font-semibold bg-lol-red/30 px-3 py-2 rounded-lg border border-lol-red/50">
-                        {player.spell1Id} + {player.spell2Id}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-          </div>
-        </div>
-            </div>
-
-            {/* NoCS Tips for Live Game */}
-            <div className="lol-card p-6">
-              <h3 className="text-xl font-bold text-lol-gold mb-4 flex items-center">
-                <Target className="w-5 h-5 mr-2" />
-                NoCS Challenge Tips
-              </h3>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-lol-green mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-lol-accent/80">
-                      Focus on champion kills and objective control instead of minion farming
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-lol-green mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-lol-accent/80">
-                      Use abilities for utility and mobility, not for clearing waves
-                    </p>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <XCircle className="w-5 h-5 text-lol-red mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-lol-accent/80">
-                      Avoid any abilities or attacks that might kill minions
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Trophy className="w-5 h-5 text-lol-gold mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-lol-accent/80">
-                      Coordinate with your team to secure objectives without minion kills
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* AI-Powered NoCS Advice */}
-            {aiAdvice && (
-              <div className="lol-card p-6 bg-lol-darker/50 border border-lol-gold/30">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-gradient-to-br from-lol-gold to-yellow-500 rounded-full flex items-center justify-center">
-                    <Brain className="w-6 h-6 text-lol-dark" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-lol-gold">AI-Powered NoCS Strategy</h3>
-                    <p className="text-sm text-lol-accent/70">Personalized advice for your current game</p>
-                  </div>
-                </div>
-
-                {/* Summary */}
-                <div className="mb-6 p-4 bg-lol-gold/20 rounded-lg border border-lol-gold/30">
-                  <p className="text-lol-accent text-center italic font-medium">"{aiAdvice.summary}"</p>
-                </div>
-
-                <div className="grid lg:grid-cols-2 gap-6">
-                  {/* Left Column */}
-                  <div className="space-y-4">
-                    {/* Player Tips */}
-                    <div>
-                      <h4 className="text-lg font-semibold text-lol-gold mb-3 flex items-center">
-                        <CheckCircle className="w-5 h-5 mr-2 text-lol-green" />
-                        Your Champion Tips
-                      </h4>
-                      <ul className="space-y-2">
-                        {aiAdvice.playerTips.map((tip, index) => (
-                          <li key={index} className="flex items-start gap-2 text-lol-accent">
-                            <span className="text-lol-green text-sm mt-1 font-bold">•</span>
-                            <span className="text-sm font-medium">{tip}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Safe Abilities */}
-                    <div>
-                      <h4 className="text-lg font-semibold text-lol-gold mb-3 flex items-center">
-                        <Shield className="w-5 h-5 mr-2 text-lol-green" />
-                        Safe Abilities
-                      </h4>
-                      <ul className="space-y-2">
-                        {aiAdvice.safeAbilities.map((ability, index) => (
-                          <li key={index} className="flex items-start gap-2 text-lol-accent">
-                            <span className="text-lol-green text-sm mt-1 font-bold">•</span>
-                            <span className="text-sm font-medium">{ability}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-
-                  {/* Right Column */}
-                  <div className="space-y-4">
-                    {/* Enemy Threats */}
-                    <div>
-                      <h4 className="text-lg font-semibold text-lol-gold mb-3 flex items-center">
-                        <AlertTriangle className="w-5 h-5 mr-2 text-lol-red" />
-                        Enemy Threats
-                      </h4>
-                      <ul className="space-y-2">
-                        {aiAdvice.enemyThreats.map((threat, index) => (
-                          <li key={index} className="flex items-start gap-2 text-lol-accent">
-                            <span className="text-lol-red text-sm mt-1 font-bold">•</span>
-                            <span className="text-sm font-medium">{threat}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Dangerous Abilities */}
-                    <div>
-                      <h4 className="text-lg font-semibold text-lol-gold mb-3 flex items-center">
-                        <XCircle className="w-5 h-5 mr-2 text-lol-red" />
-                        Dangerous Abilities
-                      </h4>
-                      <ul className="space-y-2">
-                        {aiAdvice.dangerousAbilities.map((ability, index) => (
-                          <li key={index} className="flex items-start gap-2 text-lol-accent">
-                            <span className="text-lol-red text-sm mt-1 font-bold">•</span>
-                            <span className="text-sm font-medium">{ability}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                {/* General Strategy */}
-                <div className="mt-6 p-4 bg-lol-gold/20 rounded-lg border border-lol-gold/20">
-                  <h4 className="text-lg font-semibold text-lol-gold mb-3 flex items-center">
-                    <Sparkles className="w-5 h-5 mr-2" />
-                    General Strategy
-                  </h4>
-                  <ul className="space-y-2">
-                    {aiAdvice.generalStrategy.map((strategy, index) => (
-                      <li key={index} className="flex items-start gap-2 text-lol-accent">
-                        <span className="text-lol-gold text-sm mt-1 font-bold">•</span>
-                        <span className="text-sm font-medium">{strategy}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            )}
-
-            {/* Loading AI Advice */}
-            {loadingAdvice && (
-              <div className="lol-card p-6 border-2 border-lol-gold/30">
-                <div className="flex items-center justify-center gap-3">
-                  <Loader2 className="w-6 h-6 text-lol-gold animate-spin" />
-                  <span className="text-lol-gold font-medium">Getting AI-powered NoCS advice...</span>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Match History Section */}
-        {(liveGame || error) && (
-          <div className="lol-card p-6 mt-8 bg-lol-darker/50 border border-lol-gold/30">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-lol-gold flex items-center">
-                <Trophy className="w-6 h-6 mr-3" />
-                Low CS Match History (0-9 CS)
-              </h3>
-              
-              {/* Refresh Section */}
-              <div className="flex items-center gap-3 mt-4 sm:mt-0">
-                <div className="text-sm text-lol-accent/70">
-                  {lastRefresh > 0 && (
-                    <span>
-                      Last updated: {new Date(lastRefresh).toLocaleTimeString()}
-                      {isFromCache && <span className="text-lol-gold ml-2 font-medium">(cached)</span>}
-                    </span>
-                  )}
-                </div>
-                <button
-                  onClick={() => refreshData()}
-                  disabled={refreshCooldown > 0 || loading}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors font-medium ${
-                    refreshCooldown > 0 || loading
-                      ? 'bg-lol-accent/20 text-lol-accent/40 cursor-not-allowed'
-                      : 'bg-lol-gold text-lol-dark hover:bg-lol-gold/80'
-                  }`}
-                  title={refreshCooldown > 0 ? `Refresh available in ${refreshCooldown}s` : 'Refresh data'}
-                >
-                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                  {refreshCooldown > 0 ? `${refreshCooldown}s` : 'Refresh'}
-                </button>
-              </div>
-            </div>
-            
-            {loadingHistory ? (
-              <div className="text-center py-8">
-                <Loader2 className="w-8 h-8 text-lol-gold mx-auto mb-4 animate-spin" />
-                <p className="text-lol-accent/70 font-medium">Loading match history...</p>
-              </div>
-            ) : matchHistory.length > 0 ? (
-              <div className="space-y-4">
-                {/* Filters and Sorting */}
-                <div className="bg-lol-darker rounded-lg p-4 border border-lol-gold/40">
-                  <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => setShowFilters(!showFilters)}
-                        className="flex items-center gap-2 px-3 py-2 bg-lol-gold text-lol-dark text-sm rounded-lg hover:bg-lol-gold/80 transition-colors border border-lol-gold font-medium"
-                      >
-                        <Filter className="w-4 h-4" />
-                        {showFilters ? 'Hide Filters' : 'Show Filters'}
-                      </button>
-                      <div className="text-sm text-lol-accent font-medium">
-                        Showing {filteredAndSortedMatches.length} of {matchHistory.length} matches
-                      </div>
-                    </div>
-                    
-                    {/* Sort Controls */}
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        <ArrowUpDown className="w-4 h-4 text-lol-gold" />
-                        <select
-                          value={sortBy}
-                          onChange={(e) => setSortBy(e.target.value)}
-                          className="bg-lol-dark text-lol-accent text-sm rounded px-3 py-2 border border-lol-gold/60 focus:outline-none focus:border-lol-gold font-medium"
-                        >
-                          <option value="date">Date</option>
-                          <option value="cs">CS</option>
-                          <option value="kda">KDA</option>
-                          <option value="duration">Duration</option>
-                          <option value="champion">Champion</option>
-                        </select>
-                      </div>
-                      <button
-                        onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                        className="p-2 bg-lol-dark text-lol-gold hover:bg-lol-gold hover:text-lol-dark transition-colors rounded border border-lol-gold/60"
-                        title={sortOrder === 'asc' ? 'Sort Descending' : 'Sort Ascending'}
-                      >
-                        {sortOrder === 'asc' ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Filter Panel */}
-                  {showFilters && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 pt-4 border-t border-lol-gold/40">
-                      {/* Result Filter */}
-                      <div>
-                        <label className="block text-xs text-lol-gold mb-2 uppercase tracking-wider font-medium">Result</label>
-                        <select
-                          value={filters.result}
-                          onChange={(e) => setFilters(prev => ({ ...prev, result: e.target.value }))}
-                          className="w-full bg-lol-dark text-lol-accent text-sm rounded px-3 py-2 border border-lol-gold/60 focus:outline-none focus:border-lol-gold font-medium"
-                        >
-                          <option value="all">All Results</option>
-                          <option value="win">Wins Only</option>
-                          <option value="loss">Losses Only</option>
-                        </select>
-                      </div>
-
-                      {/* CS Range Filter */}
-                      <div>
-                        <label className="block text-xs text-lol-gold mb-2 uppercase tracking-wider font-medium">CS Range</label>
-                        <select
-                          value={filters.csRange}
-                          onChange={(e) => setFilters(prev => ({ ...prev, csRange: e.target.value }))}
-                          className="w-full bg-lol-dark text-lol-accent text-sm rounded px-3 py-2 border border-lol-gold/60 focus:outline-none focus:border-lol-gold font-medium"
-                        >
-                          <option value="all">All CS</option>
-                          <option value="0">Perfect (0 CS)</option>
-                          <option value="1-2">Low (1-2 CS)</option>
-                          <option value="3-5">Medium (3-5 CS)</option>
-                          <option value="6-9">High (6-9 CS)</option>
-                        </select>
-                      </div>
-
-                      {/* Game Mode Filter */}
-                      <div>
-                        <label className="block text-xs text-lol-gold mb-2 uppercase tracking-wider font-medium">Game Mode</label>
-                        <select
-                          value={filters.gameMode}
-                          onChange={(e) => setFilters(prev => ({ ...prev, gameMode: e.target.value }))}
-                          className="w-full bg-lol-dark text-lol-accent text-sm rounded px-3 py-2 border border-lol-gold/60 focus:outline-none focus:border-lol-gold font-medium"
-                        >
-                          <option value="all">All Modes</option>
-                          <option value="CLASSIC">Summoner's Rift</option>
-                          <option value="ARAM">ARAM</option>
-                          <option value="URF">URF</option>
-                        </select>
-                      </div>
-
-                      {/* Champion Filter */}
-                      <div>
-                        <label className="block text-xs text-lol-gold mb-2 uppercase tracking-wider font-medium">Champion</label>
-                        <input
-                          type="text"
-                          placeholder="Search champion..."
-                          value={filters.champion}
-                          onChange={(e) => setFilters(prev => ({ ...prev, champion: e.target.value }))}
-                          className="w-full bg-lol-dark text-lol-accent text-sm rounded px-3 py-2 border border-lol-gold/60 focus:outline-none focus:border-lol-gold font-medium placeholder-lol-accent/60"
-                        />
-                      </div>
-
-                      {/* Date Range Filter */}
-                      <div>
-                        <label className="block text-xs text-lol-gold mb-2 uppercase tracking-wider font-medium">Date Range</label>
-                        <select
-                          value={filters.dateRange}
-                          onChange={(e) => setFilters(prev => ({ ...prev, dateRange: e.target.value }))}
-                          className="w-full bg-lol-dark text-lol-accent text-sm rounded px-3 py-2 border border-lol-gold/60 focus:outline-none focus:border-lol-gold font-medium"
-                        >
-                          <option value="all">All Time</option>
-                          <option value="today">Today</option>
-                          <option value="week">This Week</option>
-                          <option value="month">This Month</option>
-                        </select>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Filter Summary */}
-                  {getFilterSummary().length > 0 && (
-                    <div className="pt-4 border-t border-lol-gold/40">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Filter className="w-4 h-4 text-lol-gold" />
-                        <span className="text-sm text-lol-gold font-medium">Active Filters:</span>
-                      </div>
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        {getFilterSummary().map((filter, index) => (
-                          <span
-                            key={index}
-                            className="px-3 py-1 bg-lol-gold text-lol-dark text-xs rounded font-medium border border-lol-gold"
-                          >
-                            {filter}
-                          </span>
-                        ))}
-                      </div>
-                      <button
-                        onClick={() => setFilters({
-                          result: 'all',
-                          csRange: 'all',
-                          gameMode: 'all',
-                          champion: '',
-                          dateRange: 'all'
-                        })}
-                        className="px-4 py-2 bg-lol-red text-lol-dark text-sm rounded-lg hover:bg-lol-red/80 transition-colors border border-lol-red font-medium"
-                      >
-                        Clear All Filters
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Quick Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                  <div className="bg-lol-darker rounded-lg p-3 border border-lol-gold/40 text-center">
-                    <div className="text-xs text-lol-gold uppercase tracking-wider mb-1 font-medium">Total Matches</div>
-                    <div className="text-lg font-bold text-lol-accent">{filteredAndSortedMatches.length}</div>
-                  </div>
-                  <div className="bg-lol-darker rounded-lg p-3 border border-lol-gold/40 text-center">
-                    <div className="text-xs text-lol-gold uppercase tracking-wider mb-1 font-medium">Perfect (0 CS)</div>
-                    <div className="text-lg font-bold text-lol-green">
-                      {filteredAndSortedMatches.filter(m => m.cs === 0).length}
-                    </div>
-                  </div>
-                  <div className="bg-lol-darker rounded-lg p-3 border border-lol-gold/40 text-center">
-                    <div className="text-xs text-lol-gold uppercase tracking-wider mb-1 font-medium">Win Rate</div>
-                    <div className="text-lg font-bold text-lol-accent">
-                      {filteredAndSortedMatches.length > 0 
-                        ? `${Math.round((filteredAndSortedMatches.filter(m => m.win).length / filteredAndSortedMatches.length) * 100)}%`
-                        : '0%'
-                      }
-                    </div>
-                  </div>
-                  <div className="bg-lol-darker rounded-lg p-3 border border-lol-gold/40 text-center">
-                    <div className="text-xs text-lol-gold uppercase tracking-wider mb-1 font-medium">Avg CS</div>
-                    <div className="text-lg font-bold text-lol-accent">
-                      {filteredAndSortedMatches.length > 0 
-                        ? (filteredAndSortedMatches.reduce((sum, m) => sum + m.cs, 0) / filteredAndSortedMatches.length).toFixed(1)
-                        : '0.0'
-                      }
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-sm text-lol-accent font-medium mb-4">
-                  {filteredAndSortedMatches.length === matchHistory.length 
-                    ? `Found ${matchHistory.length} games with 0-9 CS in recent matches`
-                    : `Showing ${filteredAndSortedMatches.length} of ${matchHistory.length} matches`
-                  }
-                </div>
-                {filteredAndSortedMatches.map((match) => (
-                  <div key={match.matchId} className={`relative overflow-hidden rounded-xl border-2 transition-all duration-300 hover:scale-[1.02] ${
-                    match.win 
-                      ? 'bg-gradient-to-br from-lol-green/20 via-lol-green/10 to-lol-green/5 border-lol-green/40 shadow-lg shadow-lol-green/20' 
-                      : 'bg-gradient-to-br from-lol-red/20 via-lol-red/10 to-lol-red/5 border-lol-red/40 shadow-lg shadow-lol-red/20'
-                  }`}>
-                    {/* Background Pattern */}
-                    <div className="absolute inset-0 opacity-5">
-                      <div className="absolute top-0 right-0 w-32 h-32 transform rotate-12">
-                        <div className={`w-full h-full ${match.win ? 'bg-lol-green' : 'bg-lol-red'} rounded-full blur-xl`}></div>
-                      </div>
-                    </div>
-                    
-                    {/* Header Section */}
-                    <div className="relative p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-4">
-                          {/* Champion Image with Glow */}
-                          <div className={`relative ${match.win ? 'shadow-lg shadow-lol-green/30' : 'shadow-lg shadow-lol-red/30'}`}>
-                            <img
-                              src={getChampionImage(match.championName)}
-                              alt={match.championName}
-                              className="w-16 h-16 rounded-xl object-cover border-2 border-lol-gold/30"
-                            />
-                            <div className={`absolute inset-0 rounded-xl ${match.win ? 'bg-lol-green/20' : 'bg-lol-red/20'} opacity-0 hover:opacity-100 transition-opacity duration-200`}></div>
-                          </div>
+                    <h4 className="text-2xl font-bold mb-6 text-white flex items-center gap-2">
+                      <svg className="w-6 h-6 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      Enemy Team
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {liveGame.participants
+                        .filter((p: any) => {
+                          // Find the summoner's team ID by matching summoner name
+                          if (!summonerData?.riotId) return false
                           
-                          {/* Champion Info */}
-                          <div>
-                            <div className="text-xl font-bold text-lol-gold mb-1">{match.championName}</div>
-                            <div className="text-sm text-lol-accent/70 font-medium">{match.gameMode}</div>
-                            <div className="text-xs text-lol-accent/50 mt-1">
-                              {new Date(match.gameCreation).toLocaleDateString('en-US', { 
-                                weekday: 'short', 
-                                month: 'short', 
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
+                          const summonerTeamId = liveGame.participants.find((p2: any) => {
+                            const gameName = summonerData.riotId.split('#')[0]
+                            const matches = p2.summonerName.includes(gameName)
+                            console.log('Team matching:', {
+                              participantName: p2.summonerName,
+                              gameName,
+                              matches,
+                              teamId: p2.teamId
+                            })
+                            return matches
+                          })?.teamId
+                          
+                          // Show only participants NOT on the summoner's team (enemies)
+                          return summonerTeamId && p.teamId !== summonerTeamId
+                        })
+                        .map((participant: any, index) => {
+                                                     const analysis = championAnalysis.find(a => a.name === participant.championName) || {
+                             name: participant.championName,
+                             isDangerous: false,
+                             notes: 'Analysis unavailable',
+                             dangerousAbilities: [],
+                             abilityDetails: [],
+                             basicAttacksDangerous: true
+                           }
+                          return analysis
+                        })
+                        .sort((a, b) => {
+                          // Sort dangerous champions first
+                          if (a.isDangerous && !b.isDangerous) return -1
+                          if (!a.isDangerous && b.isDangerous) return 1
+                          return 0
+                        })
+                        .map((analysis, index) => {
+                                                     const isDangerous = analysis.isDangerous && ((analysis.abilityDetails && analysis.abilityDetails.length > 0) || analysis.dangerousAbilities.length > 0)
+                          return (
+                            <div 
+                              key={index} 
+                              className={`backdrop-blur-sm rounded-xl border transition-all duration-200 hover:transform hover:scale-105 p-6 ${
+                                isDangerous 
+                                  ? 'bg-gradient-to-br from-red-500/10 to-red-600/10 border-red-500/30 hover:border-red-500/50' 
+                                  : 'bg-gradient-to-br from-green-500/10 to-green-600/10 border-green-500/30 hover:border-green-500/50'
+                              }`}
+                            >
+                              {/* Champion Profile Header */}
+                              <div className="flex flex-col items-center text-center mb-4">
+                                <div className="relative mb-3">
+                                  <img
+                                    src={getChampionImageUrl(analysis.name)}
+                                    alt={`${analysis.name} portrait`}
+                                    className={`w-16 h-16 rounded-full border-2 shadow-lg ${
+                                      isDangerous ? 'border-red-500/50' : 'border-green-500/50'
+                                    }`}
+                                    onError={(e) => {
+                                      // Fallback to a default image if champion image fails to load
+                                      e.currentTarget.src = 'https://ddragon.leagueoflegends.com/cdn/15.17.1/img/champion/Ahri.png'
+                                    }}
+                                  />
+                                </div>
+                                <div className="font-bold text-lg text-white mb-1">{analysis.name}</div>
+                                <div className="text-sm text-slate-300">
+                                  {liveGame.participants.find(p => p.championName === analysis.name)?.summonerName || 'Unknown'}
+                                </div>
+                              </div>
+                              
+                              {/* Champion Analysis Content */}
+                              <div className="space-y-3">
+                                {isDangerous ? (
+                                  <div className="text-center">
+                                    <div className="text-sm text-red-300 font-medium mb-2">
+                                      ⚠️ Dangerous Champion
+                                    </div>
+                                                                         <div className="text-sm text-red-400 font-medium mb-2">
+                                       Watch out for:
+                                     </div>
+                                     <div className="space-y-2">
+                                       {analysis.abilityDetails?.map((ability, idx) => (
+                                         <div key={idx} className="flex items-center gap-2 p-2 bg-red-500/20 rounded-lg border border-red-500/30">
+                                           <img 
+                                             src={getAbilityImageUrl(analysis.name, ability.key)} 
+                                             alt={`${ability.key} - ${ability.name}`}
+                                             className="w-6 h-6 rounded"
+                                             onError={(e) => {
+                                               e.currentTarget.style.display = 'none'
+                                             }}
+                                           />
+                                           <div className="flex-1">
+                                             <span className="text-xs font-medium text-red-300">
+                                               {ability.key} - {ability.name}
+                                             </span>
+                                             {ability.notes && (
+                                               <p className="text-xs text-red-200/80 mt-1">
+                                                 {ability.notes}
+                                               </p>
+                                             )}
+                                           </div>
+                                         </div>
+                                       )) || analysis.dangerousAbilities.map((abilityKey, idx) => (
+                                         <div key={idx} className="flex items-center gap-2 p-2 bg-red-500/20 rounded-lg border border-red-500/30">
+                                           <img 
+                                             src={getAbilityImageUrl(analysis.name, abilityKey)} 
+                                             alt={`${abilityKey}`}
+                                             className="w-6 h-6 rounded"
+                                             onError={(e) => {
+                                               e.currentTarget.style.display = 'none'
+                                             }}
+                                           />
+                                           <div className="flex-1">
+                                             <span className="text-xs font-medium text-red-300">
+                                               {abilityKey}
+                                             </span>
+                                           </div>
+                                         </div>
+                                       ))}
+                                     </div>
+                                    {analysis.notes && (
+                                      <div className="text-sm text-amber-200 bg-amber-500/20 rounded-lg p-3 border border-amber-500/30">
+                                        {analysis.notes}
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="text-center">
+                                    <div className="text-sm text-green-300 font-medium mb-2">
+                                      ✅ Safe Champion
+                                    </div>
+                                    <div className="text-sm text-green-200">
+                                      This champion appears to be safe.
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             </div>
+                          )
+                        })}
+                    </div>
+                                     </div>
+
+                                     </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-slate-400 mb-3 text-lg">No active game found</div>
+                    <div className="text-slate-500">
+                      This summoner is not currently in a game
+                    </div>
+                  </div>
+                )}
+
+                {/* Previous Matches Section */}
+        {matchHistory.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold text-white mb-6 text-center">
+              Previous Low CS Matches
+            </h2>
+            <div className="space-y-4">
+              {matchHistory.map((match, index) => {
+                const isZeroCS = match.cs === 0
+                const cardBackground = isZeroCS 
+                  ? 'bg-gradient-to-br from-amber-800/30 via-yellow-700/20 to-amber-900/40' 
+                  : 'bg-gradient-to-br from-slate-700/50 to-slate-800/50'
+                const cardBorder = isZeroCS 
+                  ? 'border-amber-400/60' 
+                  : match.win 
+                    ? 'border-green-500/30' 
+                    : 'border-red-500/30'
+                const textColor = isZeroCS ? 'text-white' : 'text-slate-400'
+                const isExpanded = expandedMatches.has(index)
+
+                return (
+                  <div
+                    key={match.matchId}
+                    className={`relative overflow-hidden rounded-xl border-2 ${cardBackground} ${cardBorder} backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] cursor-pointer`}
+                    onClick={() => toggleMatchExpansion(index)}
+                  >
+                    {/* Champion Splash Art Background */}
+                    <div className="absolute inset-0 opacity-10">
+                      <img
+                        src={`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${match.championName}_0.jpg`}
+                        alt={`${match.championName} splash art`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none'
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-black/60" />
+                    </div>
+
+                    {/* Content Overlay */}
+                    <div className="relative z-10 p-6">
+                      {/* Card Header - Compact View */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-4">
+                          <img
+                            src={`https://ddragon.leagueoflegends.com/cdn/15.17.1/img/champion/${match.championName}.png`}
+                            alt={match.championName}
+                            className="w-16 h-16 rounded-lg border-2 border-white/20"
+                          />
+                          <div>
+                            <h3 className={`text-xl font-bold ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                              {match.championName}
+                            </h3>
+                            <p className={`text-sm ${isZeroCS ? 'text-amber-200' : textColor}`}>
+                              {match.teamPosition} • {match.cs} CS
+                            </p>
                           </div>
                         </div>
                         
-                        {/* Result Badge */}
                         <div className="text-right">
-                          <div className={`px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wider ${
+                          <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                             match.win 
-                              ? 'bg-lol-green/20 text-lol-green border border-lol-green/40' 
-                              : 'bg-lol-red/20 text-lol-red border border-lol-red/40'
+                              ? 'bg-green-500/20 text-green-100 border border-green-400/40' 
+                              : 'bg-red-500/20 text-red-100 border border-red-400/40'
                           }`}>
                             {match.win ? 'Victory' : 'Defeat'}
                           </div>
-                          <div className={`mt-2 text-2xl font-bold ${match.win ? 'text-lol-green' : 'text-lol-red'}`}>
-                            {match.win ? '🏆' : '💀'}
-                          </div>
+                          <p className={`text-sm mt-1 ${isZeroCS ? 'text-amber-200' : textColor}`}>
+                            {match.gameMode === 'CHERRY' ? 'Arena' : match.gameMode === 'CLASSIC' ? 'Solo/Duo' : match.gameMode}
+                          </p>
                         </div>
                       </div>
-                      
-                      {/* Stats Grid */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        {/* KDA */}
-                        <div className="text-center group">
-                          <div className="text-xs text-lol-accent/60 uppercase tracking-wider font-medium mb-1">KDA</div>
-                          <div className="text-lg font-bold text-lol-gold group-hover:text-lol-accent transition-colors">
+
+                      {/* Key Stats Grid - Always Visible */}
+                      <div className="grid grid-cols-4 gap-4 mb-4 p-4 bg-black/20 rounded-lg">
+                        <div className="text-center">
+                          <p className={`text-xs ${isZeroCS ? 'text-amber-300' : 'text-slate-400'}`}>Duration</p>
+                          <p className={`font-semibold ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                            {formatGameDuration(match.gameDuration)}
+                          </p>
+                        </div>
+                        <div className="text-center">
+                          <p className={`text-xs ${isZeroCS ? 'text-amber-300' : 'text-slate-400'}`}>KDA</p>
+                          <p className={`font-semibold ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
                             {match.kills}/{match.deaths}/{match.assists}
-                          </div>
-                          <div className="text-xs text-lol-accent/50 mt-1">
-                            {match.deaths === 0 ? 'Perfect' : `${((match.kills + match.assists) / Math.max(match.deaths, 1)).toFixed(1)} KDA`}
-                          </div>
+                          </p>
                         </div>
-                        
-                                                 {/* CS */}
-                         <div className="text-center group">
-                           <div className="text-xs text-lol-accent/60 uppercase tracking-wider font-medium mb-1">CS</div>
-                           <div className="text-lg font-bold text-lol-gold group-hover:text-lol-accent transition-colors">
-                             {match.cs}
-                           </div>
-                           <div className="text-xs text-lol-accent/50 mt-1">
-                             {match.cs === 0 ? '🎯 Perfect NoCS!' : 
-                              match.cs <= 2 ? '⚠️ Low CS' : 
-                              match.cs <= 5 ? '❌ Medium CS' : 
-                              match.cs <= 9 ? '💀 High CS' : '🔥 Over Limit'}
-                           </div>
-                         </div>
-                        
-                        {/* Duration */}
-                        <div className="text-center group">
-                          <div className="text-xs text-lol-accent/60 uppercase tracking-wider font-medium mb-1">Duration</div>
-                          <div className="text-lg font-bold text-lol-gold group-hover:text-lol-accent transition-colors">
-                            {Math.floor(match.gameDuration / 60)}:{String(match.gameDuration % 60).padStart(2, '0')}
+                        <div className="text-center">
+                          <div className="flex items-center justify-center space-x-1 mb-1">
+                            <img
+                              src="/images/live/gold.png"
+                              alt="Gold"
+                              className="w-4 h-4"
+                            />
+                            <span className={`text-xs ${isZeroCS ? 'text-amber-300' : 'text-slate-400'}`}>Gold</span>
                           </div>
-                          <div className="text-xs text-lol-accent/50 mt-1">
-                            {match.gameDuration < 1200 ? 'Quick Game' : match.gameDuration < 1800 ? 'Standard' : 'Long Game'}
-                          </div>
+                          <p className={`font-semibold ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                            {formatNumber(match.goldEarned)}
+                          </p>
                         </div>
-                        
-                        {/* Items */}
-                        <div className="text-center group">
-                          <div className="text-xs text-lol-accent/60 uppercase tracking-wider font-medium mb-1">Items</div>
-                          <div className="text-lg font-bold text-lol-gold group-hover:text-lol-accent transition-colors">
-                            {match.items.length}
+                        <div className="text-center">
+                          <div className="flex items-center justify-center space-x-1 mb-1">
+                            <img
+                              src="/images/live/experience.png"
+                              alt="Experience"
+                              className="w-4 h-4"
+                            />
+                            <span className={`text-xs ${isZeroCS ? 'text-amber-300' : 'text-slate-400'}`}>Level</span>
                           </div>
-                          <div className="text-xs text-lol-accent/50 mt-1">
-                            {match.items.length >= 6 ? 'Full Build' : `${6 - match.items.length} slots left`}
-                          </div>
+                          <p className={`font-semibold ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                            {match.champLevel}
+                          </p>
                         </div>
                       </div>
-                      
-                                             {/* CS Progress Bar - Goal is 0 CS */}
-                       <div className="mt-4">
-                         <div className="flex items-center justify-between text-xs text-lol-accent/60 mb-1">
-                           <span>CS Performance</span>
-                           <span>{match.cs} CS (Goal: 0)</span>
-                         </div>
-                         <div className="w-full bg-lol-dark/50 rounded-full h-2 overflow-hidden">
-                           <div 
-                             className={`h-full rounded-full transition-all duration-500 ${
-                               match.cs === 0 ? 'bg-lol-green' : 
-                               match.cs <= 2 ? 'bg-lol-gold' : 
-                               match.cs <= 5 ? 'bg-lol-blue' : 
-                               match.cs <= 9 ? 'bg-lol-accent' : 'bg-lol-red'
-                             }`}
-                             style={{ width: `${Math.max(100 - (match.cs / 10) * 100, 0)}%` }}
-                           ></div>
-                         </div>
-                         <div className="text-xs text-lol-accent/50 mt-1 text-center">
-                           {match.cs === 0 ? '🎯 Perfect NoCS Challenge!' : 
-                            match.cs <= 2 ? '⚠️ Low CS - Could be worse' : 
-                            match.cs <= 5 ? '❌ Medium CS - Not good' : 
-                            match.cs <= 9 ? '💀 High CS - Almost failed' : '🔥 Over Limit - Failed Challenge'}
-                         </div>
-                       </div>
+
+                      {/* Expandable Details */}
+                      <div className="border-t border-white/10 pt-4">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toggleMatchExpansion(index)
+                          }}
+                          className={`w-full text-center py-2 px-4 rounded-lg transition-colors ${
+                            isZeroCS 
+                              ? 'bg-amber-500/20 text-amber-100 hover:bg-amber-500/30' 
+                              : 'bg-slate-600/50 text-slate-300 hover:bg-slate-600/70'
+                          }`}
+                        >
+                          {isExpanded ? 'Show Less' : 'Show More Details'}
+                        </button>
+
+                        {isExpanded && (
+                          <div className="mt-4 space-y-6">
+                            {/* Combat & Performance */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                              {/* Damage Stats */}
+                              <div className="bg-black/20 rounded-lg p-4">
+                                <h4 className={`text-lg font-semibold mb-3 ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                  Combat Performance
+                                </h4>
+                                <div className="space-y-2">
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center space-x-2">
+                                      <Sword className="w-4 h-4 text-red-500" />
+                                      <span className={textColor}>Total Damage:</span>
+                                    </div>
+                                    <span className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {formatNumber(match.totalDamageDealtToChampions)}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center space-x-2">
+                                      <Target className="w-4 h-4 text-orange-500" />
+                                      <span className={textColor}>Physical Damage:</span>
+                                    </div>
+                                    <span className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {formatNumber(match.physicalDamageDealtToChampions)}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center space-x-2">
+                                      <Zap className="w-4 h-4 text-blue-500" />
+                                      <span className={textColor}>Magic Damage:</span>
+                                    </div>
+                                    <span className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {formatNumber(match.magicDamageDealtToChampions)}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center space-x-2">
+                                      <Target className="w-4 h-4 text-purple-500" />
+                                      <span className={textColor}>True Damage:</span>
+                                    </div>
+                                    <span className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {formatNumber(match.trueDamageDealtToChampions)}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center space-x-2">
+                                      <Shield className="w-4 h-4 text-blue-500" />
+                                      <span className={textColor}>Damage Taken:</span>
+                                    </div>
+                                    <span className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {formatNumber(match.totalDamageTaken)}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center space-x-2">
+                                      <Shield className="w-4 h-4 text-green-500" />
+                                      <span className={textColor}>Damage Mitigated:</span>
+                                    </div>
+                                    <span className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {formatNumber(match.damageSelfMitigated)}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center space-x-2">
+                                      <Heart className="w-4 h-4 text-red-400" />
+                                      <span className={textColor}>Healing Done:</span>
+                                    </div>
+                                    <span className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {formatNumber(match.totalHeal)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Vision & Objectives */}
+                              <div className="bg-black/20 rounded-lg p-4">
+                                <h4 className={`text-lg font-semibold mb-3 ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                  Vision & Objectives
+                                </h4>
+                                <div className="space-y-2">
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center space-x-2">
+                                      <Eye className="w-4 h-4 text-blue-500" />
+                                      <span className={textColor}>Vision Score:</span>
+                                    </div>
+                                    <span className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {match.visionScore}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center space-x-2">
+                                      <Eye className="w-4 h-4 text-green-500" />
+                                      <span className={textColor}>Wards Placed:</span>
+                                    </div>
+                                    <span className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {match.wardsPlaced}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center space-x-2">
+                                      <Eye className="w-4 h-4 text-red-500" />
+                                      <span className={textColor}>Wards Killed:</span>
+                                    </div>
+                                    <span className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {match.wardsKilled}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center space-x-2">
+                                      <Eye className="w-4 h-4 text-purple-500" />
+                                      <span className={textColor}>Control Wards:</span>
+                                    </div>
+                                    <span className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {match.visionWardsBoughtInGame}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center space-x-2">
+                                      <Target className="w-4 h-4 text-orange-500" />
+                                      <span className={textColor}>Dragon Kills:</span>
+                                    </div>
+                                    <span className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {match.dragonKills}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center space-x-2">
+                                      <Target className="w-4 h-4 text-purple-500" />
+                                      <span className={textColor}>Baron Kills:</span>
+                                    </div>
+                                    <span className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {match.baronKills}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center space-x-2">
+                                      <Target className="w-4 h-4 text-yellow-500" />
+                                      <span className={textColor}>Tower Kills:</span>
+                                    </div>
+                                    <span className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {match.towerKills}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center space-x-2">
+                                      <Target className="w-4 h-4 text-red-500" />
+                                      <span className={textColor}>Inhibitor Kills:</span>
+                                    </div>
+                                    <span className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {match.inhibitorKills}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Kills & Multi-kills */}
+                            <div className="bg-black/20 rounded-lg p-4">
+                              <h4 className={`text-lg font-semibold mb-3 ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                Kills & Multi-kills
+                              </h4>
+                              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="text-center">
+                                  <p className={`text-xs ${textColor}`}>Killing Sprees</p>
+                                  <p className={`font-semibold ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                    {match.killingSprees}
+                                  </p>
+                                </div>
+                                <div className="text-center">
+                                  <p className={`text-xs ${textColor}`}>Largest Spree</p>
+                                  <p className={`font-semibold ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                    {match.largestKillingSpree}
+                                  </p>
+                                </div>
+                                <div className="text-center">
+                                  <p className={`text-xs ${textColor}`}>Double Kills</p>
+                                  <p className={`font-semibold ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                    {match.doubleKills}
+                                  </p>
+                                </div>
+                                <div className="text-center">
+                                  <p className={`text-xs ${textColor}`}>Triple Kills</p>
+                                  <p className={`font-semibold ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                    {match.tripleKills}
+                                  </p>
+                                </div>
+                                <div className="text-center">
+                                  <p className={`text-xs ${textColor}`}>Quadra Kills</p>
+                                  <p className={`font-semibold ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                    {match.quadraKills}
+                                  </p>
+                                </div>
+                                <div className="text-center">
+                                  <p className={`text-xs ${textColor}`}>Penta Kills</p>
+                                  <p className={`font-semibold ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                    {match.pentaKills}
+                                  </p>
+                                </div>
+                                <div className="text-center">
+                                  <p className={`text-xs ${textColor}`}>Largest Crit</p>
+                                  <p className={`font-semibold ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                    {formatNumber(match.largestCriticalStrike)}
+                                  </p>
+                                </div>
+                                <div className="text-center">
+                                  <p className={`text-xs ${textColor}`}>Objectives Stolen</p>
+                                  <p className={`font-semibold ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                    {match.objectivesStolen}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Items & Spells */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                              {/* Items Built */}
+                              <div className="bg-black/20 rounded-lg p-4">
+                                <h4 className={`text-lg font-semibold mb-3 ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                  Items Built
+                                </h4>
+                                <div className="grid grid-cols-4 gap-2">
+                                  {match.items.map((itemId, itemIndex) => (
+                                    <div key={itemIndex} className="text-center">
+                                      {itemId > 0 ? (
+                                        <img
+                                          src={`https://ddragon.leagueoflegends.com/cdn/15.17.1/img/item/${itemId}.png`}
+                                          alt={`Item ${itemId}`}
+                                          className="w-10 h-10 mx-auto rounded border border-white/20"
+                                          onError={(e) => {
+                                            e.currentTarget.style.display = 'none'
+                                          }}
+                                        />
+                                      ) : (
+                                        <div className="w-10 h-10 mx-auto bg-slate-600/30 rounded border border-white/10 flex items-center justify-center">
+                                          <span className="text-xs text-slate-400">-</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="mt-3 text-center">
+                                  <p className={`text-xs ${textColor}`}>
+                                    Items Purchased: {match.itemsPurchased} • Consumables: {match.consumablesPurchased}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Summoner Spells */}
+                              <div className="bg-black/20 rounded-lg p-4">
+                                <h4 className={`text-lg font-semibold mb-3 ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                  Summoner Spells
+                                </h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="text-center">
+                                    {summonerSpells[match.summoner1Id] ? (
+                                      <>
+                                        <img
+                                          src={summonerSpells[match.summoner1Id].imageUrl}
+                                          alt={summonerSpells[match.summoner1Id].name}
+                                          className="w-8 h-8 mx-auto rounded border border-white/20"
+                                          onError={(e) => {
+                                            e.currentTarget.style.display = 'none'
+                                          }}
+                                        />
+                                        <p className={`text-xs mt-1 ${textColor}`}>
+                                          {summonerSpells[match.summoner1Id].name}
+                                        </p>
+                                        <p className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                          {match.summoner1Casts || 0}
+                                        </p>
+                                      </>
+                                    ) : (
+                                      <div className="w-8 h-8 mx-auto rounded border border-white/20 bg-slate-700/50 flex items-center justify-center">
+                                        <span className={`text-xs ${textColor}`}>Loading...</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="text-center">
+                                    {summonerSpells[match.summoner2Id] ? (
+                                      <>
+                                        <img
+                                          src={summonerSpells[match.summoner2Id].imageUrl}
+                                          alt={summonerSpells[match.summoner2Id].name}
+                                          className="w-8 h-8 mx-auto rounded border border-white/20"
+                                          onError={(e) => {
+                                            e.currentTarget.style.display = 'none'
+                                          }}
+                                        />
+                                        <p className={`text-xs mt-1 ${textColor}`}>
+                                          {summonerSpells[match.summoner2Id].name}
+                                        </p>
+                                        <p className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                          {match.summoner2Casts || 0}
+                                        </p>
+                                      </>
+                                    ) : (
+                                      <div className="w-8 h-8 mx-auto rounded border border-white/20 bg-slate-700/50 flex items-center justify-center">
+                                        <span className={`text-xs ${textColor}`}>Loading...</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {/* Champion Ability Casts */}
+                                <div className="mt-4">
+                                  <h5 className={`text-sm font-semibold mb-2 ${isZeroCS ? 'text-amber-200' : 'text-slate-300'}`}>
+                                    Champion Abilities
+                                  </h5>
+                                  <div className="grid grid-cols-4 gap-2">
+                                    <div className="text-center">
+                                      <img
+                                        src={getAbilityImageUrl(match.championName, 'Q')}
+                                        alt="Q Ability"
+                                        className="w-8 h-8 mx-auto rounded border border-white/20"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none'
+                                        }}
+                                      />
+                                      <p className={`text-xs mt-1 ${textColor}`}>Q</p>
+                                      <p className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                        {match.spell1Casts}
+                                      </p>
+                                    </div>
+                                    <div className="text-center">
+                                      <img
+                                        src={getAbilityImageUrl(match.championName, 'W')}
+                                        alt="W Ability"
+                                        className="w-8 h-8 mx-auto rounded border border-white/20"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none'
+                                        }}
+                                      />
+                                      <p className={`text-xs mt-1 ${textColor}`}>W</p>
+                                      <p className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                        {match.spell2Casts}
+                                      </p>
+                                    </div>
+                                    <div className="text-center">
+                                      <img
+                                        src={getAbilityImageUrl(match.championName, 'E')}
+                                        alt="E Ability"
+                                        className="w-8 h-8 mx-auto rounded border border-white/20"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none'
+                                        }}
+                                      />
+                                      <p className={`text-xs mt-1 ${textColor}`}>E</p>
+                                      <p className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                        {match.spell3Casts}
+                                      </p>
+                                    </div>
+                                    <div className="text-center">
+                                      <img
+                                        src={getAbilityImageUrl(match.championName, 'R')}
+                                        alt="R Ability"
+                                        className="w-8 h-8 mx-auto rounded border border-white/20"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none'
+                                        }}
+                                      />
+                                      <p className={`text-xs mt-1 ${textColor}`}>R</p>
+                                      <p className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                        {match.spell4Casts}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* CS & Minions */}
+                            <div className="bg-black/20 rounded-lg p-4">
+                              <h4 className={`text-lg font-semibold mb-3 ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                CS & Minions
+                              </h4>
+                                                              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                  <div className="text-center">
+                                    <div className="flex items-center justify-center space-x-1 mb-1">
+                                      <Target className="w-4 h-4 text-yellow-500" />
+                                      <p className={`text-xs ${textColor}`}>Total CS</p>
+                                    </div>
+                                    <p className={`font-semibold ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {match.cs}
+                                    </p>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="flex items-center justify-center space-x-1 mb-1">
+                                      <Target className="w-4 h-4 text-green-500" />
+                                      <p className={`text-xs ${textColor}`}>Minions Killed</p>
+                                    </div>
+                                    <p className={`font-semibold ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {match.totalMinionsKilled}
+                                    </p>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="flex items-center justify-center space-x-1 mb-1">
+                                      <Target className="w-4 h-4 text-orange-500" />
+                                      <p className={`text-xs ${textColor}`}>Jungle CS</p>
+                                    </div>
+                                    <p className={`font-semibold ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {match.neutralMinionsKilled}
+                                    </p>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="flex items-center justify-center space-x-1 mb-1">
+                                      <Target className="w-4 h-4 text-red-500" />
+                                      <p className={`text-xs ${textColor}`}>Enemy Jungle</p>
+                                    </div>
+                                    <p className={`font-semibold ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {match.totalEnemyJungleMinionsKilled}
+                                    </p>
+                                  </div>
+                                </div>
+                            </div>
+
+                            {/* Game Details & Achievements */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                              {/* Game Info */}
+                              <div className="bg-black/20 rounded-lg p-4">
+                                <h4 className={`text-lg font-semibold mb-3 ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                  Game Information
+                                </h4>
+                                <div className="space-y-2">
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center space-x-2">
+                                      <img
+                                        src="/images/live/experience.png"
+                                        alt="Experience"
+                                        className="w-4 h-4"
+                                      />
+                                      <span className={textColor}>Champion Level:</span>
+                                    </div>
+                                    <span className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {match.champLevel}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center space-x-2">
+                                      <Target className="w-4 h-4 text-blue-500" />
+                                      <span className={textColor}>Queue ID:</span>
+                                    </div>
+                                    <span className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {match.queueId}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex items-center space-x-2">
+                                      <Target className="w-4 h-4 text-green-500" />
+                                      <span className={textColor}>Game Version:</span>
+                                    </div>
+                                    <span className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {match.gameVersion}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Achievements & Firsts */}
+                              <div className="bg-black/20 rounded-lg p-4">
+                                <h4 className={`text-lg font-semibold mb-3 ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                  Achievements
+                                </h4>
+                                <div className="space-y-3">
+                                  {/* First Blood */}
+                                  {(match.firstBloodKill || match.firstBloodAssist) && (
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                                      <span className={`text-sm font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                        {match.firstBloodKill ? 'First Blood' : 'First Blood Assist'}
+                                      </span>
+                                    </div>
+                                  )}
+                                  
+                                  {/* First Tower */}
+                                  {(match.firstTowerKill || match.firstTowerAssist) && (
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                                      <span className={`text-sm font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                        {match.firstTowerKill ? 'First Tower' : 'First Tower Assist'}
+                                      </span>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Bounty Level */}
+                                  {match.bountyLevel > 0 && (
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                                      <span className={`text-sm font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                        Bounty Level {match.bountyLevel}
+                                      </span>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Killing Spree */}
+                                  {match.largestKillingSpree >= 3 && (
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                                      <span className={`text-sm font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                        {match.largestKillingSpree} Kill Spree
+                                      </span>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Multi-kills */}
+                                  {match.doubleKills > 0 && (
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                      <span className={`text-sm font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                        {match.doubleKills} Double Kill{match.doubleKills > 1 ? 's' : ''}
+                                      </span>
+                                    </div>
+                                  )}
+                                  
+                                  {match.tripleKills > 0 && (
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                      <span className={`text-sm font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                        {match.tripleKills} Triple Kill{match.tripleKills > 1 ? 's' : ''}
+                                      </span>
+                                    </div>
+                                  )}
+                                  
+                                  {match.quadraKills > 0 && (
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                                      <span className={`text-sm font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                        {match.quadraKills} Quadra Kill{match.quadraKills > 1 ? 's' : ''}
+                                      </span>
+                                    </div>
+                                  )}
+                                  
+                                  {match.pentaKills > 0 && (
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                                      <span className={`text-sm font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                        {match.pentaKills} Penta Kill{match.pentaKills > 1 ? 's' : ''}
+                                      </span>
+                                    </div>
+                                  )}
+                                  
+                                  {/* No achievements */}
+                                  {!match.firstBloodKill && !match.firstBloodAssist && !match.firstTowerKill && 
+                                   !match.firstTowerAssist && match.bountyLevel === 0 && match.largestKillingSpree < 3 &&
+                                   match.doubleKills === 0 && match.tripleKills === 0 && match.quadraKills === 0 && match.pentaKills === 0 && (
+                                    <div className="text-center py-2">
+                                      <span className={`text-sm ${textColor}`}>No special achievements</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Time Stats */}
+                            <div className="bg-black/20 rounded-lg p-4">
+                              <h4 className={`text-lg font-semibold mb-3 ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                Time Statistics
+                              </h4>
+                                                              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                                  <div className="text-center">
+                                    <div className="flex items-center justify-center space-x-1 mb-1">
+                                      <Target className="w-4 h-4 text-green-500" />
+                                      <p className={`text-xs ${textColor}`}>Time Played</p>
+                                    </div>
+                                    <p className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {formatGameDuration(match.timePlayed)}
+                                    </p>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="flex items-center justify-center space-x-1 mb-1">
+                                      <Zap className="w-4 h-4 text-blue-500" />
+                                      <p className={`text-xs ${textColor}`}>Time CCing</p>
+                                    </div>
+                                    <p className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {formatGameDuration(match.timeCCingOthers)}
+                                    </p>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="flex items-center justify-center space-x-1 mb-1">
+                                      <Target className="w-4 h-4 text-purple-500" />
+                                      <p className={`text-xs ${textColor}`}>Total CC Dealt</p>
+                                    </div>
+                                    <p className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {formatGameDuration(match.totalTimeCCDealt)}
+                                    </p>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="flex items-center justify-center space-x-1 mb-1">
+                                      <Target className="w-4 h-4 text-red-500" />
+                                      <p className={`text-xs ${textColor}`}>Time Dead</p>
+                                    </div>
+                                    <p className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {formatGameDuration(match.totalTimeSpentDead)}
+                                    </p>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="flex items-center justify-center space-x-1 mb-1">
+                                      <Target className="w-4 h-4 text-yellow-500" />
+                                      <p className={`text-xs ${textColor}`}>Longest Alive</p>
+                                    </div>
+                                    <p className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {formatGameDuration(match.longestTimeSpentLiving)}
+                                    </p>
+                                  </div>
+                                </div>
+                            </div>
+
+                            {/* Healing & Shielding */}
+                            <div className="bg-black/20 rounded-lg p-4">
+                              <h4 className={`text-lg font-semibold mb-3 ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                Support & Utility
+                              </h4>
+                                                              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                  <div className="text-center">
+                                    <div className="flex items-center justify-center space-x-1 mb-1">
+                                      <Heart className="w-4 h-4 text-red-400" />
+                                      <p className={`text-xs ${textColor}`}>Total Heal</p>
+                                    </div>
+                                    <p className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {formatNumber(match.totalHeal)}
+                                    </p>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="flex items-center justify-center space-x-1 mb-1">
+                                      <Heart className="w-4 h-4 text-pink-400" />
+                                      <p className={`text-xs ${textColor}`}>Heals on Allies</p>
+                                    </div>
+                                    <p className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {formatNumber(match.totalHealsOnTeammates)}
+                                    </p>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="flex items-center justify-center space-x-1 mb-1">
+                                      <Shield className="w-4 h-4 text-blue-400" />
+                                      <p className={`text-xs ${textColor}`}>Damage Shielded</p>
+                                    </div>
+                                    <p className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {formatNumber(match.totalDamageShieldedOnTeammates)}
+                                    </p>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="flex items-center justify-center space-x-1 mb-1">
+                                      <User className="w-4 h-4 text-green-400" />
+                                      <p className={`text-xs ${textColor}`}>Units Healed</p>
+                                    </div>
+                                    <p className={`font-medium ${isZeroCS ? 'text-amber-100' : 'text-white'}`}>
+                                      {match.totalUnitsHealed}
+                                    </p>
+                                  </div>
+                                </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Trophy className="w-16 h-16 text-lol-gold/40 mx-auto mb-4" />
-                <p className="text-lol-accent/60 text-lg">
-                  {filteredAndSortedMatches.length === 0 && matchHistory.length > 0 
-                    ? 'No matches match your current filters' 
-                    : 'No low CS games found'
-                  }
-                </p>
-                <p className="text-lol-accent/40 text-sm mt-2">
-                  {filteredAndSortedMatches.length === 0 && matchHistory.length > 0 
-                    ? 'Try adjusting your filters or clearing them to see all available matches.'
-                    : 'This summoner hasn\'t played any games with 0-9 CS in their recent history.'
-                  }
-                </p>
-                {filteredAndSortedMatches.length === 0 && matchHistory.length > 0 && (
-                  <button
-                    onClick={() => setFilters({
-                      result: 'all',
-                      csRange: 'all',
-                      gameMode: 'all',
-                      champion: '',
-                      dateRange: 'all'
-                    })}
-                    className="mt-4 px-6 py-2 bg-lol-gold/20 text-lol-gold text-sm rounded-lg hover:bg-lol-gold/40 transition-colors border border-lol-gold/30"
-                  >
-                    Clear All Filters
-                  </button>
-                )}
-              </div>
-            )}
+                )
+              })}
+            </div>
           </div>
         )}
-
-        {/* Initial State */}
-        {!liveGame && !error && !loading && (
-          <div className="lol-card p-12 text-center">
-            <Search className="w-16 h-16 text-lol-accent/40 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-lol-gold mb-2">Ready to Look Up a Game?</h3>
-            <p className="text-lol-accent/60">
-              Enter a summoner name above to find their current live game and get NoCS strategy tips.
-            </p>
+            </div>
           </div>
         )}
       </div>
