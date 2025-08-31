@@ -758,7 +758,7 @@ export default function LiveGamePage() {
                         <div className="text-center">
                           <div className="flex items-center justify-center space-x-1 mb-1">
                             <img
-                              src="/images/live/gold.png"
+                              src="/images/live/Gold.png"
                               alt="Gold"
                               className="w-4 h-4"
                             />
@@ -771,7 +771,7 @@ export default function LiveGamePage() {
                         <div className="text-center">
                           <div className="flex items-center justify-center space-x-1 mb-1">
                             <img
-                              src="/images/live/experience.png"
+                              src="/images/live/Experience.png"
                               alt="Experience"
                               className="w-4 h-4"
                             />
@@ -1227,7 +1227,7 @@ export default function LiveGamePage() {
                                   <div className="flex justify-between items-center">
                                     <div className="flex items-center space-x-2">
                                       <img
-                                        src="/images/live/experience.png"
+                                        src="/images/live/Experience.png"
                                         alt="Experience"
                                         className="w-4 h-4"
                                       />
