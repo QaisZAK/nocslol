@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, AlertTriangle, CheckCircle, XCircle, Info, Shield, Zap, Target } from 'lucide-react'
+import { ArrowLeft, AlertTriangle, CheckCircle, XCircle, Info, Shield, Zap, Target, Sword } from 'lucide-react'
+import { getAbilityImageUrl, getPassiveImageUrl } from '../../champion-image-filenames'
 
 interface Champion {
   id: string
@@ -87,45 +88,19 @@ export default function ChampionDetailPage({ params }: { params: Promise<{ id: s
   }
 
   const getCSStats = () => {
-    // Playing AGAINST: What to watch out for
     const givesCSAbilities = champion.csMechanics.abilities.filter(ability => ability.givesCS)
     const passiveGivesCS = champion.csMechanics.passive.givesCS
+    const totalAbilities = champion.csMechanics.abilities.length + 1 // +1 for passive
     
     return {
       givesCS: givesCSAbilities.length + (passiveGivesCS ? 1 : 0),
-      noCS: 0,
-      total: givesCSAbilities.length + (passiveGivesCS ? 1 : 0)
+      noCS: totalAbilities - (givesCSAbilities.length + (passiveGivesCS ? 1 : 0)),
+      total: totalAbilities
     }
   }
 
   const csStats = getCSStats()
-
-  const getStrategy = () => {
-    // Generate strategy for playing against
-    const givesCSAbilities = champion.csMechanics.abilities.filter(ability => ability.givesCS)
-    const passiveGivesCS = champion.csMechanics.passive.givesCS
-    
-    if (givesCSAbilities.length === 0 && !passiveGivesCS) {
-      return `${champion.name} is safe to play against - they have no abilities that give CS. You can engage freely without worrying about accidentally gaining CS.`
-    } else {
-      let dangerousItems = []
-      
-      if (givesCSAbilities.length > 0) {
-        dangerousItems.push(...givesCSAbilities.map(ability => `${ability.key} - ${ability.name}`))
-      }
-      
-      if (passiveGivesCS) {
-        dangerousItems.push('passive')
-      }
-      
-      if (dangerousItems.length === 0) {
-        return `${champion.name} is safe to play against - they have no abilities that give CS.`
-      }
-      
-      const dangerousAbilities = dangerousItems.join(', ')
-      return `When playing against ${champion.name}, be careful of: ${dangerousAbilities}. These can give you CS if you're not careful. Focus on avoiding these abilities and attacks to maintain your NoCS challenge.`
-    }
-  }
+  const isSafeChampion = csStats.givesCS === 0
 
   return (
     <div className="min-h-screen bg-lol-dark">
@@ -139,201 +114,240 @@ export default function ChampionDetailPage({ params }: { params: Promise<{ id: s
             </Link>
           </div>
           
-          <h1 className="text-5xl font-bold text-lol-gold mb-2 text-shadow">
-            {champion.name}
-          </h1>
-          <p className="text-xl text-lol-accent/80 italic">
-            {champion.title}
-          </p>
-
+          <div className="flex items-center gap-6">
+            <img
+              src={`https://ddragon.leagueoflegends.com/cdn/15.17.1/img/champion/${champion.id}.png`}
+              alt={champion.name}
+              className="w-24 h-24 rounded-lg"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement
+                target.style.display = 'none'
+              }}
+            />
+            <div>
+              <h1 className="text-5xl font-bold text-lol-gold mb-2 text-shadow">
+                {champion.name}
+              </h1>
+              <p className="text-xl text-lol-accent/80 italic">
+                {champion.title}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Column - Champion Info */}
-          <div className="lg:col-span-1">
-            <div className="lol-card p-6 mb-6">
-              <img
-                src={`https://ddragon.leagueoflegends.com/cdn/15.17.1/img/champion/${champion.id}.png`}
-                alt={champion.name}
-                className="w-full rounded-lg mb-4"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement
-                  target.style.display = 'none'
-                  target.nextElementSibling?.classList.remove('hidden')
-                }}
-              />
-              <div className="hidden w-full h-64 rounded-lg bg-lol-dark flex items-center justify-center text-lol-accent font-bold text-lg">
-                {champion.name}
-              </div>
-              
-              {/* CS Summary Stats */}
-              <div className="space-y-4">
-                <div className="text-center p-4 bg-lol-dark/50 rounded-lg">
-                  <h3 className="text-lg font-bold text-lol-gold mb-2">
-                    CS Summary
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-lol-red">{csStats.givesCS}</div>
-                      <div className="text-sm text-lol-accent/70">
-                        Gives CS
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-lol-green">{csStats.noCS}</div>
-                      <div className="text-sm text-lol-accent/70">No CS</div>
-                    </div>
-                  </div>
-                </div>
+        {/* Quick Status Card */}
+        <div className="mb-8">
+          <div className={`lol-card p-6 text-center ${isSafeChampion ? 'border-lol-green/50 bg-lol-green/5' : 'border-lol-red/50 bg-lol-red/5'}`}>
+            <div className="flex items-center justify-center gap-4 mb-4">
+              {isSafeChampion ? (
+                <CheckCircle className="w-12 h-12 text-lol-green" />
+              ) : (
+                <AlertTriangle className="w-12 h-12 text-lol-red" />
+              )}
+              <div>
+                <h2 className={`text-3xl font-bold ${isSafeChampion ? 'text-lol-green' : 'text-lol-red'}`}>
+                  {isSafeChampion ? 'SAFE TO PLAY AGAINST' : 'DANGEROUS - WATCH OUT!'}
+                </h2>
+                <p className="text-lol-accent/80 text-lg">
+                  {isSafeChampion 
+                    ? `${champion.name} has no abilities that give CS. You're safe!`
+                    : `${champion.name} has ${csStats.givesCS} ability${csStats.givesCS > 1 ? 's' : ''} that give${csStats.givesCS > 1 ? '' : 's'} CS.`
+                  }
+                </p>
               </div>
             </div>
+            
+            {/* CS Stats */}
+            <div className="grid grid-cols-3 gap-6 max-w-md mx-auto">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-lol-red">{csStats.givesCS}</div>
+                <div className="text-sm text-lol-accent/70">Gives CS</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-lol-green">{csStats.noCS}</div>
+                <div className="text-sm text-lol-accent/70">Safe</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-lol-gold">{csStats.total}</div>
+                <div className="text-sm text-lol-accent/70">Total</div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-            {/* Strategy */}
-            {getStrategy().trim() !== "" && (
-              <div className="lol-card p-6">
-                <h3 className="text-xl font-bold text-lol-gold mb-4 flex items-center">
-                  <Target className="w-5 h-5 mr-2" />
-                  Strategy
-                </h3>
-                <div className="bg-lol-dark/50 rounded p-4 border-l border-lol-gold/30">
-                  <p className="text-lol-accent/90 leading-relaxed">
-                    {getStrategy()}
+        {/* Abilities Grid */}
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-lol-gold mb-6 text-center">Abilities Breakdown</h2>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Passive */}
+            <div className={`lol-card p-6 ${champion.csMechanics.passive.givesCS ? 'border-lol-red/50 bg-lol-red/5' : 'border-lol-green/50 bg-lol-green/5'}`}>
+              <div className="text-center mb-4">
+                <img
+                  src={getPassiveImageUrl(champion.id)}
+                  alt={`${champion.name} Passive`}
+                  className="w-16 h-16 mx-auto mb-3 rounded"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none'
+                  }}
+                />
+                <h3 className="text-xl font-bold text-lol-gold">Passive</h3>
+                <h4 className="text-lg font-semibold text-lol-accent mb-2">
+                  {champion.csMechanics.passive.name}
+                </h4>
+              </div>
+              
+              <div className={`px-3 py-2 rounded-full text-sm font-medium text-center mb-4 ${
+                champion.csMechanics.passive.givesCS 
+                  ? 'bg-lol-red/20 text-lol-red border border-lol-red/30' 
+                  : 'bg-lol-green/20 text-lol-green border border-lol-green/30'
+              }`}>
+                {champion.csMechanics.passive.givesCS ? '⚠️ GIVES CS' : '✅ SAFE'}
+              </div>
+              
+              <p className="text-lol-accent/80 text-sm mb-3 leading-relaxed">
+                {champion.csMechanics.passive.description}
+              </p>
+              
+              {champion.csMechanics.passive.notes.trim() !== "" && (
+                <div className="bg-lol-dark/50 rounded p-3 border-l border-lol-gold/30">
+                  <p className="text-xs text-lol-accent/80">
+                    <strong className="text-lol-gold">Note:</strong> {champion.csMechanics.passive.notes}
                   </p>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
 
-          {/* Right Column - Abilities and CS Mechanics */}
-          <div className="lg:col-span-2">
-            {/* Passive */}
-            <div className="lol-card p-6 mb-6">
-              <h3 className="text-2xl font-bold text-lol-gold mb-6 flex items-center">
-                <Shield className="w-6 h-6 mr-3" />
-                Passive Ability
-              </h3>
-              
-              <div className="border border-lol-gold/20 rounded-lg p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h4 className="text-lg font-semibold text-lol-accent">
-                      {champion.csMechanics.passive.name}
-                    </h4>
-                    <p className="text-lol-accent/70 text-sm mt-1">
-                      {champion.csMechanics.passive.description}
-                    </p>
-                  </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    champion.csMechanics.passive.givesCS 
-                      ? 'bg-lol-red/20 text-lol-red border border-lol-red/30' 
-                      : 'bg-lol-green/20 text-lol-green border border-lol-green/30'
-                  }`}>
-                    {champion.csMechanics.passive.givesCS ? 'Gives CS' : 'No CS'}
-                  </div>
+            {/* Abilities */}
+            {champion.csMechanics.abilities.map((ability, index) => (
+              <div key={index} className={`lol-card p-6 ${ability.givesCS ? 'border-lol-red/50 bg-lol-red/5' : 'border-lol-green/50 bg-lol-green/5'}`}>
+                <div className="text-center mb-4">
+                  <img
+                    src={getAbilityImageUrl(champion.id, ability.key)}
+                    alt={`${champion.name} ${ability.key}`}
+                    className="w-16 h-16 mx-auto mb-3 rounded"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                  <h3 className="text-xl font-bold text-lol-gold">{ability.key}</h3>
+                  <h4 className="text-lg font-semibold text-lol-accent mb-2">
+                    {ability.name}
+                  </h4>
                 </div>
                 
-                {champion.csMechanics.passive.notes.trim() !== "" && (
-                  <div className="bg-lol-dark/50 rounded p-3">
-                    <p className="text-sm text-lol-accent/80">
-                      <strong>
-                        Strategy:
-                      </strong> {champion.csMechanics.passive.notes}
+                <div className={`px-3 py-2 rounded-full text-sm font-medium text-center mb-4 ${
+                  ability.givesCS 
+                    ? 'bg-lol-red/20 text-lol-red border border-lol-red/30' 
+                    : 'bg-lol-green/20 text-lol-green border border-lol-green/30'
+                }`}>
+                  {ability.givesCS ? '⚠️ GIVES CS' : '✅ SAFE'}
+                </div>
+                
+                <p className="text-lol-accent/80 text-sm mb-3 leading-relaxed">
+                  {ability.description}
+                </p>
+                
+                {ability.notes.trim() !== "" && (
+                  <div className="bg-lol-dark/50 rounded p-3 border-l border-lol-gold/30">
+                    <p className="text-xs text-lol-accent/80">
+                      <strong className="text-lol-gold">Note:</strong> {ability.notes}
                     </p>
                   </div>
                 )}
               </div>
-            </div>
+            ))}
+          </div>
+        </div>
 
-            {/* Abilities */}
-            <div className="lol-card p-6 mb-6">
-              <h3 className="text-2xl font-bold text-lol-gold mb-6 flex items-center">
-                <Zap className="w-6 h-6 mr-3" />
-                Abilities & CS Mechanics
+        {/* Strategy Summary */}
+        <div className="lol-card p-6">
+          <h2 className="text-2xl font-bold text-lol-gold mb-4 text-center flex items-center justify-center">
+            <Target className="w-6 h-6 mr-2" />
+            Strategy Summary
+          </h2>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* What to Watch Out For */}
+            <div className="bg-lol-red/10 border border-lol-red/30 rounded-lg p-4">
+              <h3 className="text-lol-red font-bold text-lg mb-3 flex items-center">
+                <XCircle className="w-5 h-5 mr-2" />
+                ⚠️ Watch Out For
               </h3>
-              
-              <div className="space-y-6">
-                {champion.csMechanics.abilities.map((ability, index) => (
-                  <div key={index} className="border border-lol-gold/20 rounded-lg p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h4 className="text-lg font-semibold text-lol-accent">
-                          {ability.key} - {ability.name}
-                        </h4>
-                        <p className="text-lol-accent/70 text-sm mt-1">
-                          {ability.description}
-                        </p>
-                      </div>
-                      <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        ability.givesCS 
-                          ? 'bg-lol-red/20 text-lol-red border border-lol-red/30' 
-                          : 'bg-lol-green/20 text-lol-green border border-lol-green/30'
-                      }`}>
-                        {ability.givesCS ? 'Gives CS' : 'No CS'}
-                      </div>
-                    </div>
-                    
-                    {ability.notes.trim() !== "" && (
-                      <div className="bg-lol-dark/50 rounded p-3">
-                        <p className="text-sm text-lol-accent/80">
-                          <strong>
-                            Strategy:
-                          </strong> {ability.notes}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              {champion.csMechanics.abilities.filter(ability => ability.givesCS).length > 0 || champion.csMechanics.passive.givesCS ? (
+                <ul className="space-y-2">
+                  {champion.csMechanics.abilities
+                    .filter(ability => ability.givesCS)
+                    .map((ability, index) => (
+                      <li key={index} className="flex items-center gap-2 text-lol-accent/90">
+                        <img 
+                          src={getAbilityImageUrl(champion.id, ability.key)} 
+                          alt={ability.key}
+                          className="w-6 h-6 rounded"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                        <span><strong>{ability.key}</strong> - {ability.name}</span>
+                      </li>
+                    ))}
+                  {champion.csMechanics.passive.givesCS && (
+                    <li className="flex items-center gap-2 text-lol-accent/90">
+                      <img 
+                        src={getPassiveImageUrl(champion.id)} 
+                        alt="Passive"
+                        className="w-6 h-6 rounded"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none'
+                        }}
+                      />
+                      <span><strong>Passive</strong> - {champion.csMechanics.passive.name}</span>
+                    </li>
+                  )}
+                </ul>
+              ) : (
+                <p className="text-lol-green font-medium">🎉 Nothing to worry about!</p>
+              )}
             </div>
-
-            {/* Quick Reference */}
-            <div className="lol-card p-6">
-              <h3 className="text-xl font-bold text-lol-gold mb-4 flex items-center">
-                <Info className="w-5 h-5 mr-2" />
-                Quick Reference
+            
+            {/* Safe */}
+            <div className="bg-lol-green/10 border border-lol-green/30 rounded-lg p-4">
+              <h3 className="text-lol-green font-bold text-lg mb-3 flex items-center">
+                <CheckCircle className="w-5 h-5 mr-2" />
+                ✅ Safe
               </h3>
-              
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="bg-lol-red/10 border border-lol-red/30 rounded-lg p-4">
-                  <h4 className="text-lol-red font-semibold mb-2 flex items-center">
-                    <XCircle className="w-4 h-4 mr-2" />
-                    Watch Out For (Gives CS)
-                  </h4>
-                  <ul className="space-y-1 text-sm text-lol-accent/80">
-                    {champion.csMechanics.abilities
-                      .filter(ability => ability.givesCS)
-                      .map((ability, index) => (
-                        <li key={index} className="pl-4">• {ability.key} - {ability.name}</li>
-                      ))}
-                    {champion.csMechanics.passive.givesCS && (
-                      <li className="pl-4">• {champion.csMechanics.passive.name}</li>
-                    )}
-                    {champion.csMechanics.abilities.filter(ability => ability.givesCS).length === 0 && 
-                     !champion.csMechanics.passive.givesCS && (
-                      <li className="pl-4 text-lol-green">• This champion is safe - no CS-gaining abilities</li>
-                    )}
-                  </ul>
-                </div>
-                
-                <div className="bg-lol-green/10 border border-lol-green/30 rounded-lg p-4">
-                  <h4 className="text-lol-green font-semibold mb-2 flex items-center">
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Safe to Use (No CS)
-                  </h4>
-                  <ul className="space-y-1 text-sm text-lol-accent/80">
-                    {champion.csMechanics.abilities
-                      .filter(ability => !ability.givesCS)
-                      .map((ability, index) => (
-                        <li key={index} className="pl-4">• {ability.key} - {ability.name}</li>
-                      ))}
-                    {!champion.csMechanics.passive.givesCS && (
-                      <li className="pl-4">• {champion.csMechanics.passive.name} (safe)</li>
-                    )}
-                  </ul>
-                </div>
-              </div>
+              <ul className="space-y-2">
+                {champion.csMechanics.abilities
+                  .filter(ability => !ability.givesCS)
+                  .map((ability, index) => (
+                    <li key={index} className="flex items-center gap-2 text-lol-accent/90">
+                      <img 
+                        src={getAbilityImageUrl(champion.id, ability.key)} 
+                        alt={ability.key}
+                        className="w-6 h-6 rounded"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none'
+                        }}
+                      />
+                      <span><strong>{ability.key}</strong> - {ability.name}</span>
+                    </li>
+                  ))}
+                {!champion.csMechanics.passive.givesCS && (
+                  <li className="flex items-center gap-2 text-lol-accent/90">
+                    <img 
+                      src={getPassiveImageUrl(champion.id)} 
+                      alt="Passive"
+                      className="w-6 h-6 rounded"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none'
+                      }}
+                    />
+                    <span><strong>Passive</strong> - {champion.csMechanics.passive.name}</span>
+                  </li>
+                )}
+              </ul>
             </div>
           </div>
         </div>

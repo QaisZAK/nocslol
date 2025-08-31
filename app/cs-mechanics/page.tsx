@@ -262,7 +262,7 @@ export default function CSMechanicsPage() {
             <div className="flex items-start gap-3">
               <CheckCircle className="w-5 h-5 text-lol-green mt-0.5 flex-shrink-0" />
               <p className="text-lol-accent/90">
-                <strong>Safe activities:</strong> Destroying wards, towers, and structures does NOT give CS
+                <strong>Safe activities:</strong> Attacking wards, but not destroying them
               </p>
             </div>
           </div>
