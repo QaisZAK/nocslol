@@ -156,8 +156,7 @@
     "objectives": [
       "Help damage objectives but let teammates get the last hit",
       "Focus on zoning enemies away from objectives",
-      "Use crowd control abilities to protect objective takers",
-      "Provide vision around objectives without participating in kills"
+      "Use crowd control abilities to protect objective takers"
     ],
     "vision": [
       "Hit wards, but do not destroy them",
