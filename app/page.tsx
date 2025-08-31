@@ -20,12 +20,6 @@ export default function HomePage() {
             <h1 className="text-6xl md:text-8xl font-bold text-lol-gold mb-4 text-shadow">
               NoCSLOL
             </h1>
-            <div className="text-xl md:text-2xl text-lol-accent/90 mb-2">
-              <span className="text-lol-red font-bold">"CS is for the weak!"</span>
-            </div>
-            <div className="text-lg text-lol-accent/70">
-              - Every NoCS player ever
-            </div>
           </div>
 
           {/* Fun Challenge Description */}
@@ -35,7 +29,7 @@ export default function HomePage() {
             </p>
             <p className="text-lg text-lol-accent/80 mb-6 max-w-3xl mx-auto">
               Win games with <span className="text-lol-red font-bold">ZERO</span> creep score. 
-              Because fu*k what RIOT thinks, we play for fun.
+              Because fu*k what X, Reddit, and Twitch chat think. We play for fun.
             </p>
             
             {/* Fun Stats */}
@@ -50,7 +44,7 @@ export default function HomePage() {
               </div>
               <div className="bg-lol-dark/50 rounded-lg p-3 border border-lol-gold/30">
                 <div className="text-2xl font-bold text-lol-green">100%</div>
-                <div className="text-sm text-lol-accent/70">Chad Energy</div>
+                <div className="text-sm text-lol-accent/70">Aura Farming</div>
               </div>
             </div>
           </div>
@@ -72,19 +66,7 @@ export default function HomePage() {
             ⚠️ Warning: May cause your teammates to flame you
           </div>
           
-          {/* Bardinette Credit */}
-          <div className="text-xs text-lol-accent/40 mt-4">
-            Inspired by{' '}
-            <a 
-              href="https://www.twitch.tv/bardinette" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-purple-400 hover:text-purple-300 transition-colors underline"
-            >
-              Bardinette
-            </a>
-            {' '}💜
-          </div>
+
         </div>
       </section>
 
@@ -148,18 +130,10 @@ export default function HomePage() {
                       </li>
                       <li className="flex items-start gap-3">
                         <span className="text-lol-green text-sm mt-1">•</span>
-                        <span>Towers</span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <span className="text-lol-green text-sm mt-1">•</span>
-                        <span>Your ego</span>
+                        <span>Towers, Inhibitors, and Nexus</span>
                       </li>
                     </ul>
                   </div>
-                </div>
-                
-                <div className="text-lol-accent/60 text-sm mt-6">
-                  Because we're not Riot slaves and we can play for fun.
                 </div>
               </div>
             </div>
@@ -184,51 +158,51 @@ export default function HomePage() {
           </h2>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="lol-card p-6 text-center group hover:scale-105 transition-transform">
+            <Link href="/champions" className="lol-card p-6 text-center group hover:scale-105 transition-transform cursor-pointer">
               <Users className="w-12 h-12 text-lol-gold mx-auto mb-4 group-hover:animate-bounce" />
               <h3 className="text-lg font-semibold text-lol-accent mb-2">Champion Database</h3>
               <p className="text-sm text-lol-accent/70">
                 Every champion's abilities analyzed. Know what to avoid like the plague.
               </p>
-            </div>
+            </Link>
             
-            <div className="lol-card p-6 text-center group hover:scale-105 transition-transform">
-              <BookOpen className="w-12 h-12 text-lol-gold mx-auto mb-4 group-hover:animate-bounce" />
-              <h3 className="text-lg font-semibold text-lol-accent mb-2">CS Mechanics Guide</h3>
-              <p className="text-sm text-lol-accent/70">
-                The bible of what gives CS. Study it like your life depends on it.
+                         <Link href="/cs-mechanics" className="lol-card p-6 text-center group hover:scale-105 transition-transform cursor-pointer">
+               <BookOpen className="w-12 h-12 text-lol-gold mx-auto mb-4 group-hover:animate-bounce" />
+               <h3 className="text-lg font-semibold text-lol-accent mb-2">CS Mechanics Guide</h3>
+               <p className="text-sm text-lol-accent/70">
+                 The bible of what gives CS. Study it like your life depends on it.
+               </p>
+             </Link>
+             
+             <Link href="/submit-info" className="lol-card p-6 text-center group hover:scale-105 transition-transform cursor-pointer">
+               <Upload className="w-12 h-12 text-lol-gold mx-auto mb-4 group-hover:animate-bounce" />
+               <h3 className="text-lg font-semibold text-lol-accent mb-2">Submit Findings</h3>
+               <p className="text-sm text-lol-accent/70">
+                 Found something new? Share it with the community of madmen.
+               </p>
+             </Link>
+             
+             <Link href="/live-game" className="lol-card p-6 text-center group hover:scale-105 transition-transform cursor-pointer border-2 border-lol-gold/30">
+               <Zap className="w-12 h-12 text-lol-gold mx-auto mb-4 group-hover:animate-bounce" />
+               <h3 className="text-lg font-semibold text-lol-accent mb-2">Live Game Lookup</h3>
+               <p className="text-sm text-lol-accent/70">
+                 Check your match history. See how much of a legend you are. (Work in Progress 🔧)
+               </p>
+             </Link>
+            
+            <div className="lol-card p-6 text-center group opacity-50 cursor-not-allowed">
+              <Trophy className="w-12 h-12 text-lol-accent/50 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-lol-accent/50 mb-2">Pro Strategies</h3>
+              <p className="text-sm text-lol-accent/50">
+                Advanced techniques from players who've lost their minds. (Coming Soon™)
               </p>
             </div>
             
-            <div className="lol-card p-6 text-center group hover:scale-105 transition-transform">
-              <Zap className="w-12 h-12 text-lol-gold mx-auto mb-4 group-hover:animate-bounce" />
-              <h3 className="text-lg font-semibold text-lol-accent mb-2">Live Game Lookup</h3>
-              <p className="text-sm text-lol-accent/70">
-                Check your match history. See how much of a legend you are.
-              </p>
-            </div>
-            
-            <div className="lol-card p-6 text-center group hover:scale-105 transition-transform">
-              <Upload className="w-12 h-12 text-lol-gold mx-auto mb-4 group-hover:animate-bounce" />
-              <h3 className="text-lg font-semibold text-lol-accent mb-2">Submit Findings</h3>
-              <p className="text-sm text-lol-accent/70">
-                Found something new? Share it with the community of madmen.
-              </p>
-            </div>
-            
-            <div className="lol-card p-6 text-center group hover:scale-105 transition-transform">
-              <Trophy className="w-12 h-12 text-lol-gold mx-auto mb-4 group-hover:animate-bounce" />
-              <h3 className="text-lg font-semibold text-lol-accent mb-2">Pro Strategies</h3>
-              <p className="text-sm text-lol-accent/70">
-                Advanced techniques from players who've lost their minds. (in the future idk)
-              </p>
-            </div>
-            
-            <div className="lol-card p-6 text-center group hover:scale-105 transition-transform">
-              <Heart className="w-12 h-12 text-lol-gold mx-auto mb-4 group-hover:animate-bounce" />
-              <h3 className="text-lg font-semibold text-lol-accent mb-2">Community</h3>
-              <p className="text-sm text-lol-accent/70">
-                Join other players who think this is a good idea.
+            <div className="lol-card p-6 text-center group opacity-50 cursor-not-allowed">
+              <Heart className="w-12 h-12 text-lol-accent/50 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-lol-accent/50 mb-2">Community</h3>
+              <p className="text-sm text-lol-accent/50">
+                Join other players who think this is a good idea. (Coming Soon™)
               </p>
             </div>
           </div>

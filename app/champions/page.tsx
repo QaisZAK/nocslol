@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { Search, AlertTriangle, CheckCircle, XCircle, User, Shield, Filter, SortAsc, SortDesc, Zap, Target, Sword, Eye, Heart } from 'lucide-react'
+import { getAbilityImageUrl, getPassiveImageUrl } from '../champion-image-filenames'
 
 interface Champion {
   id: string
@@ -227,6 +228,8 @@ export default function ChampionsPage() {
     }
   }
 
+
+
   const getStrategyPreview = (champion: Champion, mode: ViewMode) => {
     if (mode === 'against') {
       // Generate strategy for playing against
@@ -234,27 +237,75 @@ export default function ChampionsPage() {
       const passiveGivesCS = champion.csMechanics.passive.givesCS
       
       if (givesCSAbilities.length === 0 && !passiveGivesCS) {
-        return `Safe to play against - ${champion.name} has no abilities that give CS.`
+        return null; // Don't show strategy preview for safe champions
       } else {
         let dangerousItems = []
         
         if (givesCSAbilities.length > 0) {
-          dangerousItems.push(...givesCSAbilities.map(ability => `${ability.key} - ${ability.name}`))
+          dangerousItems.push(...givesCSAbilities.map(ability => ({
+            type: 'ability',
+            key: ability.key,
+            name: ability.name,
+            notes: ability.notes,
+            image: getAbilityImageUrl(champion.id, ability.key)
+          })))
         }
         
         if (passiveGivesCS) {
-          dangerousItems.push('passive')
+          dangerousItems.push({
+            type: 'passive',
+            key: 'P',
+            name: 'Passive',
+            notes: champion.csMechanics.passive.notes,
+            image: getPassiveImageUrl(champion.id)
+          })
         }
         
         if (dangerousItems.length === 0) {
-          return `Safe to play against - ${champion.name} has no abilities that give CS.`
+          return null; // Don't show strategy preview for safe champions
         }
         
-        const dangerousAbilities = dangerousItems.join(', ')
-        return `Watch out for: ${dangerousAbilities}.`
+        return dangerousItems
       }
     }
     return null; // Default for 'as' view
+  }
+
+  const getSafeChampionNotes = (champion: Champion, mode: ViewMode) => {
+    if (mode === 'against') {
+      // Get notes for safe champions (abilities that don't give CS but have notes)
+      const noCSAbilities = champion.csMechanics.abilities.filter(ability => !ability.givesCS && ability.notes.trim() !== "")
+      const passiveNoCS = !champion.csMechanics.passive.givesCS && champion.csMechanics.passive.notes.trim() !== ""
+      
+      let noteItems = []
+      
+      if (noCSAbilities.length > 0) {
+        noteItems.push(...noCSAbilities.map(ability => ({
+          type: 'ability',
+          key: ability.key,
+          name: ability.name,
+          notes: ability.notes,
+          image: getAbilityImageUrl(champion.id, ability.key)
+        })))
+      }
+      
+      if (passiveNoCS) {
+        noteItems.push({
+          type: 'passive',
+          key: 'P',
+          name: 'Passive',
+          notes: champion.csMechanics.passive.notes,
+          image: getPassiveImageUrl(champion.id)
+        })
+      }
+      
+      if (noteItems.length === 0) {
+        return null
+      }
+      
+      return noteItems
+    }
+    return null
   }
 
   const getDangerLabel = (dangerLevel: number): string => {
@@ -266,7 +317,7 @@ export default function ChampionsPage() {
   }
 
   const getCardTint = (dangerLevel: number): string => {
-    return dangerLevel === 0 ? 'border-lol-green/30 bg-lol-green/5' : 'border-lol-red/30 bg-lol-red/5'
+    return dangerLevel === 0 ? 'border-lol-green/30 bg-lol-green/60' : 'border-lol-red/30 bg-lol-red/60'
   }
 
   const clearAllFilters = () => {
@@ -487,71 +538,211 @@ export default function ChampionsPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredChampions.map((champion) => {
-            const csStats = getCSStats(champion, viewMode)
-            const strategyPreview = getStrategyPreview(champion, viewMode)
-            const dangerLevel = getDangerLevel(champion, viewMode)
-            
-            return (
-              <Link key={champion.id} href={`/champions/${champion.id}`}>
-                <div className={`champion-card group cursor-pointer border-2 ${getCardTint(dangerLevel)}`}>
-                  <div className="relative mb-4">
-                    <img
-                      src={`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champion.id}_0.jpg`}
-                      alt={champion.name}
-                      className="w-full h-48 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
-                    />
-                    
-                    {/* Danger Level Badge */}
-                    <div className={`absolute bottom-2 left-2 px-2 py-1 rounded text-xs font-medium bg-lol-dark/80 ${getDangerColor(dangerLevel)}`}>
-                      {getDangerLabel(dangerLevel)}
-                    </div>
-                  </div>
+        {/* Dangerous Champions Section */}
+        {filteredChampions.filter(champion => getDangerLevel(champion, viewMode) > 0).length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-lol-red mb-6 flex items-center">
+              <AlertTriangle className="w-5 h-5 mr-2" />
+              Dangerous Champions ({filteredChampions.filter(champion => getDangerLevel(champion, viewMode) > 0).length})
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredChampions
+                .filter(champion => getDangerLevel(champion, viewMode) > 0)
+                .map((champion) => {
+                  const csStats = getCSStats(champion, viewMode)
+                  const strategyPreview = getStrategyPreview(champion, viewMode)
+                  const dangerLevel = getDangerLevel(champion, viewMode)
                   
-                  <h3 className="text-xl font-bold text-lol-gold mb-2 group-hover:text-glow transition-all">
-                    {champion.name}
-                  </h3>
-                  <p className="text-lol-accent/70 text-sm mb-3 italic">
-                    {champion.title}
-                  </p>
+                  return (
+                    <Link key={champion.id} href={`/champions/${champion.id}`}>
+                      <div className={`champion-card group cursor-pointer border-2 ${getCardTint(dangerLevel)} flex flex-col h-full`}>
+                        <div className="relative mb-4">
+                          <img
+                            src={`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champion.id}_0.jpg`}
+                            alt={champion.name}
+                            className="w-full h-48 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
+                          />
+                          
+                          {/* Danger Level Badge */}
+                          <div className={`absolute bottom-2 left-2 px-2 py-1 rounded text-xs font-medium bg-lol-dark/80 ${getDangerColor(dangerLevel)}`}>
+                            {getDangerLabel(dangerLevel)}
+                          </div>
+                        </div>
+                        
+                        <h3 className="text-xl font-bold text-lol-gold mb-2 group-hover:text-glow transition-all">
+                          {champion.name}
+                        </h3>
+                        <p className="text-lol-accent/70 text-sm mb-3 italic">
+                          {champion.title}
+                        </p>
+                        
+                        {/* Champion Tags */}
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          <span className="px-2 py-1 bg-lol-gold/80 text-lol-dark border border-lol-gold text-xs rounded font-semibold shadow-sm">
+                            {getChampionRole(champion)}
+                          </span>
+                          {champion.tags.map(tag => (
+                            <span key={tag} className="px-2 py-1 bg-lol-blue/80 text-white border border-lol-blue text-xs rounded font-semibold shadow-sm">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                        
+                        {/* CS Summary */}
+                        <div className="space-y-2 mb-4">
+                          <div className="flex items-center justify-between">
+                            <span className="text-lol-red font-medium text-sm flex items-center">
+                              <AlertTriangle className="w-4 h-4 mr-1" />
+                              Dangerous
+                            </span>
+                            <span className="text-lol-red font-bold">{csStats.givesCS}</span>
+                          </div>
+                        </div>
+                        
+                        {/* Strategy Preview */}
+                        <div className="mt-auto">
+                          {strategyPreview ? (
+                            <div className="bg-lol-dark/50 rounded p-3 border-l border-lol-gold/30">
+                              <p className="text-xs text-lol-red font-medium mb-2">Watch out for:</p>
+                              <div className="space-y-2">
+                                {strategyPreview.map((item, index) => (
+                                  <div key={index} className="flex items-start gap-2">
+                                    <img 
+                                      src={item.image} 
+                                      alt={`${item.key} - ${item.name}`}
+                                      className="w-6 h-6 rounded"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none'
+                                      }}
+                                    />
+                                    <div className="flex-1">
+                                      <span className="text-xs font-medium text-lol-gold">
+                                        {item.key} - {item.name}
+                                      </span>
+                                      {item.notes && (
+                                        <p className="text-xs text-lol-accent/80 mt-1">
+                                          {item.notes}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="bg-lol-dark/30 rounded p-3 border border-lol-gold/20">
+                              <p className="text-xs text-lol-accent/60 text-center">No special strategy notes</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  )
+                })}
+            </div>
+          </div>
+        )}
+
+        {/* Safe Champions Section */}
+        {filteredChampions.filter(champion => getDangerLevel(champion, viewMode) === 0).length > 0 && (
+          <div>
+            <h2 className="text-2xl font-bold text-lol-green mb-6 flex items-center">
+              <CheckCircle className="w-5 h-5 mr-2" />
+              Safe Champions ({filteredChampions.filter(champion => getDangerLevel(champion, viewMode) === 0).length})
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredChampions
+                .filter(champion => getDangerLevel(champion, viewMode) === 0)
+                .sort((a, b) => {
+                  // Sort champions with notes first
+                  const aHasNotes = getSafeChampionNotes(a, viewMode) !== null;
+                  const bHasNotes = getSafeChampionNotes(b, viewMode) !== null;
                   
-                  {/* Champion Tags */}
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {champion.tags.map(tag => (
-                      <span key={tag} className="px-2 py-1 bg-lol-blue/80 text-white border border-lol-blue text-xs rounded font-semibold shadow-sm">
-                        {tag}
-                      </span>
-                    ))}
-                    <span className="px-2 py-1 bg-lol-gold/80 text-lol-dark border border-lol-gold text-xs rounded font-semibold shadow-sm">
-                      {getChampionRole(champion)}
-                    </span>
-                  </div>
+                  if (aHasNotes && !bHasNotes) return -1;
+                  if (!aHasNotes && bHasNotes) return 1;
+                  return 0;
+                })
+                .map((champion) => {
+                  const dangerLevel = getDangerLevel(champion, viewMode)
                   
-                  {/* CS Summary */}
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-lol-red font-medium text-sm flex items-center">
-                        <AlertTriangle className="w-4 h-4 mr-1" />
-                        Dangerous
-                      </span>
-                      <span className="text-lol-red font-bold">{csStats.givesCS}</span>
-                    </div>
-                  </div>
-                  
-                  {/* Strategy Preview */}
-                  {strategyPreview && (
-                    <div className="bg-lol-dark/50 rounded p-3 border-l border-lol-gold/30">
-                      <p className="text-xs text-lol-accent/80 leading-relaxed">
-                        {strategyPreview}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </Link>
-            )
-          })}
-        </div>
+                  return (
+                    <Link key={champion.id} href={`/champions/${champion.id}`}>
+                      <div className={`champion-card group cursor-pointer border-2 ${getCardTint(dangerLevel)} flex flex-col h-full`}>
+                        <div className="relative mb-4">
+                          <img
+                            src={`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champion.id}_0.jpg`}
+                            alt={champion.name}
+                            className="w-full h-48 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
+                          />
+                          
+                          {/* Danger Level Badge */}
+                          <div className={`absolute bottom-2 left-2 px-2 py-1 rounded text-xs font-medium bg-lol-dark/80 ${getDangerColor(dangerLevel)}`}>
+                            {getDangerLabel(dangerLevel)}
+                          </div>
+                        </div>
+                        
+                        <h3 className="text-xl font-bold text-lol-gold mb-2 group-hover:text-glow transition-all">
+                          {champion.name}
+                        </h3>
+                        <p className="text-lol-accent/70 text-sm mb-3 italic">
+                          {champion.title}
+                        </p>
+                        
+                        {/* Champion Tags */}
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          <span className="px-2 py-1 bg-lol-gold/80 text-lol-dark border border-lol-gold text-xs rounded font-semibold shadow-sm">
+                            {getChampionRole(champion)}
+                          </span>
+                          {champion.tags.map(tag => (
+                            <span key={tag} className="px-2 py-1 bg-lol-blue/80 text-white border border-lol-blue text-xs rounded font-semibold shadow-sm">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                        
+                        {/* Strategy Preview for Safe Champions */}
+                        <div className="mt-auto">
+                          {getSafeChampionNotes(champion, viewMode) ? (
+                            <div className="bg-lol-dark/50 rounded p-3 border-l border-lol-gold/30">
+                              <p className="text-xs text-lol-green font-medium mb-2">Notes:</p>
+                              <div className="space-y-2">
+                                {getSafeChampionNotes(champion, viewMode)?.map((item, index) => (
+                                  <div key={index} className="flex items-start gap-2">
+                                    <img 
+                                      src={item.image} 
+                                      alt={`${item.key} - ${item.name}`}
+                                      className="w-6 h-6 rounded"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none'
+                                      }}
+                                    />
+                                    <div className="flex-1">
+                                      <span className="text-xs font-medium text-lol-gold">
+                                        {item.key} - {item.name}
+                                      </span>
+                                      {item.notes && (
+                                        <p className="text-xs text-lol-accent/80 mt-1">
+                                          {item.notes}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="bg-lol-dark/30 rounded p-3 border border-lol-gold/20">
+                              <p className="text-xs text-lol-accent/60 text-center">No special notes</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  )
+                })}
+            </div>
+          </div>
+        )}
 
         {filteredChampions.length === 0 && (
           <div className="text-center py-12">

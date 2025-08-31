@@ -160,7 +160,7 @@
       "Provide vision around objectives without participating in kills"
     ],
     "vision": [
-      "Destroy enemy wards freely - they don't give CS",
+      "Hit wards, but do not destroy them",
       "Place your own wards for map control",
       "Use control wards to deny enemy vision",
       "Coordinate with your team for vision control"
