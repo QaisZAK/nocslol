@@ -4,9 +4,9 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const name = searchParams.get('name')
 
-  if (!name) {
-    return NextResponse.json({ error: 'Summoner name is required' }, { status: 400 })
-  }
+      if (!name) {
+      return NextResponse.json({ error: 'Riot ID is required (e.g., MeatKebab#HALAL)' }, { status: 400 })
+    }
 
   const riotApiKey = process.env.RIOT_API_KEY
   if (!riotApiKey) {
@@ -14,9 +14,14 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Extract the summoner name without the tagline (everything before the #)
-    const summonerName = name.split('#')[0]
-    const tagline = name.split('#')[1] || ''
+    // Extract the summoner name and tagline from the input
+    const parts = name.split('#')
+    if (parts.length !== 2) {
+      return NextResponse.json({ error: 'Invalid Riot ID format. Use: GameName#Tagline' }, { status: 400 })
+    }
+    
+    const summonerName = parts[0]
+    const tagline = parts[1]
     
     // Always use account v1 endpoint first (this works)
     const accountResponse = await fetch(
@@ -74,6 +79,7 @@ export async function GET(request: NextRequest) {
       accountId: summonerData.accountId,
       puuid: summonerData.puuid,
       name: summonerData.name,
+      riotId: `${summonerName}#${tagline}`, // Add the full Riot ID
       profileIconId: summonerData.profileIconId,
       revisionDate: summonerData.revisionDate,
       summonerLevel: summonerData.summonerLevel,
