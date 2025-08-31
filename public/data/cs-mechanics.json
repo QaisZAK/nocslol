@@ -1,0 +1,143 @@
+{
+  "generalCSMechanics": {
+    "objectives": [
+      {
+        "name": "Drake",
+        "givesCS": true,
+        "description": "Killing Drake gives 4 CS",
+        "notes": "Avoid killing the Drake, you can still help in fighting it."
+      },
+      {
+        "name": "Rift Herald",
+        "givesCS": true,
+        "description": "Killing Herald gives 4 CS",
+        "notes": "Avoid killing the Herald, you can still help in fighting it."
+      },
+      {
+        "name": "Void Grubs",
+        "givesCS": true,
+        "description": "Killing Void Grubs gives CS",
+        "notes": "Avoid killing the Void Grubs, you can still help in fighting it."
+      },
+      {
+        "name": "Baron Nashor",
+        "givesCS": true,
+        "description": "Killing Baron gives 4 CS",
+        "notes": "Avoid killing the Baron, you can still help in fighting it."
+      },
+      {
+        "name": "Elder Drake",
+        "givesCS": true,
+        "description": "Killing Drake gives 4 CS",
+        "notes": "Avoid killing the Drake, you can still help in fighting it."
+      }
+    ],
+    "structures": [
+      {
+        "name": "Towers",
+        "givesCS": false,
+        "description": "Destroying towers does not give CS",
+        "notes": "Safe to participate in tower destruction"
+      },
+      {
+        "name": "Inhibitors",
+        "givesCS": false,
+        "description": "Destroying inhibitors does not give CS",
+        "notes": "Safe to participate in inhibitor destruction"
+      },
+      {
+        "name": "Nexus",
+        "givesCS": false,
+        "description": "Destroying the nexus does not give CS",
+        "notes": "Safe to participate in nexus destruction"
+      }
+    ],
+    "vision": [
+      {
+        "name": "Control Wards",
+        "givesCS": true,
+        "description": "Destroying control wards does give CS",
+        "notes": "Avoid destroying control wards. You can still hit them for damage. Avoid if you have Umbral Glaive."
+      },
+      {
+        "name": "Normal Wards",
+        "givesCS": true,
+        "description": "Destroying wards does give CS",
+        "notes": "Avoid destroying wards. You can still hit them for damage. Avoid if you have Umbral Glaive."
+      },
+      {
+        "name": "Farsight Wards",
+        "givesCS": true,
+        "description": "Destroying farsight wards does give CS",
+        "notes": "You can still walk next to them, but do not destroy."
+      }
+    ],
+    "minions": [
+      {
+        "name": "Melee Minions",
+        "givesCS": true,
+        "description": "Killing melee minions gives CS",
+        "notes": "Avoid killing minions of any type"
+      },
+      {
+        "name": "Caster Minions",
+        "givesCS": true,
+        "description": "Killing caster minions gives CS",
+        "notes": "Avoid killing minions of any type"
+      },
+      {
+        "name": "Siege Minions",
+        "givesCS": true,
+        "description": "Killing siege minions gives CS",
+        "notes": "Avoid killing minions of any type"
+      },
+      {
+        "name": "Super Minions",
+        "givesCS": true,
+        "description": "Killing super minions gives CS",
+        "notes": "Avoid killing minions of any type"
+      }
+    ],
+    "monsters": [
+      {
+        "name": "Jungle Camps",
+        "givesCS": true,
+        "description": "Killing jungle monsters gives CS",
+        "notes": "Avoid taking jungle camps"
+      },
+      {
+        "name": "Buffs (Red/Blue)",
+        "givesCS": true,
+        "description": "Killing buff monsters gives CS",
+        "notes": "Avoid taking buffs"
+      },
+      {
+        "name": "Scuttle Crab",
+        "givesCS": true,
+        "description": "Killing scuttle crab gives CS",
+        "notes": "Avoid taking scuttle crab"
+      }
+    ]
+  },
+  "strategies": {
+    "general": [
+      "Focus on champion kills and assists instead of farming",
+      "Participate in objective fights without getting the last hit",
+      "Your team might question it or tilt, hold it together",
+      "Focus on roaming and somewhat keeping your lane healthy",
+      "First hit minions, not last hitting them"
+    ],
+    "objectives": [
+      "Help damage objectives but let teammates get the last hit",
+      "Focus on zoning enemies away from objectives",
+      "Use crowd control abilities to protect objective takers",
+      "Provide vision around objectives without participating in kills"
+    ],
+    "vision": [
+      "Do not destroy wards, you can still hit them for damage",
+      "Place your own wards for map control",
+      "Use control wards to deny enemy vision",
+      "Ping wards for yout team to take"
+    ]
+  }
+}

@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-lol-dark text-lol-accent font-sans;
+    background-image: 
+      radial-gradient(circle at 20% 80%, rgba(200, 155, 60, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(200, 155, 60, 0.1) 0%, transparent 50%);
+  }
+}
+
+@layer components {
+  .lol-card {
+    @apply bg-lol-blue/80 backdrop-blur-sm border border-lol-gold/30 rounded-lg shadow-xl;
+  }
+  
+  .lol-button {
+    @apply bg-gradient-to-r from-lol-gold to-yellow-500 text-lol-dark font-semibold px-6 py-3 rounded-lg 
+           hover:from-yellow-400 hover:to-lol-gold transition-all duration-300 transform hover:scale-105 
+           shadow-lg hover:shadow-xl;
+  }
+  
+  .lol-button-secondary {
+    @apply bg-lol-blue/60 border border-lol-gold/50 text-lol-accent px-6 py-3 rounded-lg 
+           hover:bg-lol-blue/80 hover:border-lol-gold transition-all duration-300;
+  }
+  
+  .champion-card {
+    @apply bg-gradient-to-br from-lol-blue/90 to-lol-dark/90 border border-lol-gold/30 rounded-xl 
+           p-6 hover:border-lol-gold/60 transition-all duration-300 transform hover:scale-105 
+           hover:shadow-2xl hover:shadow-lol-gold/20;
+  }
+  
+  .filter-button {
+    @apply px-4 py-2 rounded-lg border border-lol-gold/30 text-lol-accent 
+           hover:bg-lol-gold/20 hover:border-lol-gold/60 transition-all duration-200;
+  }
+  
+  .filter-button.active {
+    @apply bg-lol-gold text-lol-dark border-lol-gold;
+  }
+}
+
+@layer utilities {
+  .text-shadow {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  }
+  
+  .text-glow {
+    text-shadow: 0 0 10px rgba(200, 155, 60, 0.8);
+  }
+}
