@@ -1,0 +1,169 @@
+{
+  "generalCSMechanics": {
+    "objectives": [
+      {
+        "name": "Drake",
+        "givesCS": true,
+        "description": "Killing Drake gives CS to the entire team",
+        "notes": "Avoid participating in Drake kills if possible"
+      },
+      {
+        "name": "Rift Herald",
+        "givesCS": true,
+        "description": "Killing Rift Herald gives CS to the entire team",
+        "notes": "Avoid participating in Rift Herald kills if possible"
+      },
+      {
+        "name": "Void Grubs",
+        "givesCS": true,
+        "description": "Killing Void Grubs gives CS to the entire team",
+        "notes": "Avoid participating in Void Grub kills if possible"
+      },
+      {
+        "name": "Baron Nashor",
+        "givesCS": true,
+        "description": "Killing Baron Nashor gives CS to the entire team",
+        "notes": "Avoid participating in Baron kills if possible"
+      },
+      {
+        "name": "Elder Dragon",
+        "givesCS": true,
+        "description": "Killing Elder Dragon gives CS to the entire team",
+        "notes": "Avoid participating in Elder Dragon kills if possible"
+      }
+    ],
+    "structures": [
+      {
+        "name": "Towers",
+        "givesCS": false,
+        "description": "Destroying towers does not give CS",
+        "notes": "Safe to participate in tower destruction"
+      },
+      {
+        "name": "Inhibitors",
+        "givesCS": false,
+        "description": "Destroying inhibitors does not give CS",
+        "notes": "Safe to participate in inhibitor destruction"
+      },
+      {
+        "name": "Nexus",
+        "givesCS": false,
+        "description": "Destroying the nexus does not give CS",
+        "notes": "Safe to participate in nexus destruction"
+      }
+    ],
+    "vision": [
+      {
+        "name": "Control Wards",
+        "givesCS": false,
+        "description": "Destroying control wards does not give CS",
+        "notes": "Safe to destroy control wards"
+      },
+      {
+        "name": "Stealth Wards",
+        "givesCS": false,
+        "description": "Destroying stealth wards does not give CS",
+        "notes": "Safe to destroy stealth wards"
+      },
+      {
+        "name": "Farsight Wards",
+        "givesCS": false,
+        "description": "Destroying farsight wards does not give CS",
+        "notes": "Safe to destroy farsight wards"
+      }
+    ],
+    "minions": [
+      {
+        "name": "Melee Minions",
+        "givesCS": true,
+        "description": "Killing melee minions gives CS",
+        "notes": "Avoid killing minions of any type"
+      },
+      {
+        "name": "Caster Minions",
+        "givesCS": true,
+        "description": "Killing caster minions gives CS",
+        "notes": "Avoid killing minions of any type"
+      },
+      {
+        "name": "Siege Minions",
+        "givesCS": true,
+        "description": "Killing siege minions gives CS",
+        "notes": "Avoid killing minions of any type"
+      },
+      {
+        "name": "Super Minions",
+        "givesCS": true,
+        "description": "Killing super minions gives CS",
+        "notes": "Avoid killing minions of any type"
+      }
+    ],
+    "monsters": [
+      {
+        "name": "Jungle Camps",
+        "givesCS": true,
+        "description": "Killing jungle monsters gives CS",
+        "notes": "Avoid taking jungle camps"
+      },
+      {
+        "name": "Buffs (Red/Blue)",
+        "givesCS": true,
+        "description": "Killing buff monsters gives CS",
+        "notes": "Avoid taking buffs"
+      },
+      {
+        "name": "Scuttle Crab",
+        "givesCS": true,
+        "description": "Killing scuttle crab gives CS",
+        "notes": "Avoid taking scuttle crab"
+      }
+    ],
+    "specialCases": [
+      {
+        "name": "Jhin Flowers",
+        "givesCS": true,
+        "description": "Destroying enemy Jhin flowers gives 1 CS",
+        "notes": "CRITICAL: Never destroy enemy Jhin flowers as they give CS"
+      },
+      {
+        "name": "Heimerdinger Turrets",
+        "givesCS": true,
+        "description": "Destroying Heimerdinger turrets gives CS",
+        "notes": "Avoid destroying Heimerdinger turrets"
+      },
+      {
+        "name": "Yorick Ghouls",
+        "givesCS": true,
+        "description": "Killing Yorick ghouls gives CS",
+        "notes": "Avoid killing Yorick ghouls"
+      },
+      {
+        "name": "Malzahar Voidlings",
+        "givesCS": true,
+        "description": "Killing Malzahar voidlings gives CS",
+        "notes": "Avoid killing Malzahar voidlings"
+      }
+    ]
+  },
+  "strategies": {
+    "general": [
+      "Focus on champion kills and assists instead of farming",
+      "Participate in objective fights without getting the last hit",
+      "Use abilities for utility and positioning, not damage",
+      "Coordinate with your team to secure objectives without CS gain",
+      "Focus on vision control and roaming"
+    ],
+    "objectives": [
+      "Help damage objectives but let teammates get the last hit",
+      "Focus on zoning enemies away from objectives",
+      "Use crowd control abilities to protect objective takers",
+      "Provide vision around objectives without participating in kills"
+    ],
+    "vision": [
+      "Destroy enemy wards freely - they don't give CS",
+      "Place your own wards for map control",
+      "Use control wards to deny enemy vision",
+      "Coordinate with your team for vision control"
+    ]
+  }
+}

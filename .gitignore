@@ -112,4 +112,6 @@ temp/
 # Large data folders (these contain thousands of image files)
 data/dragontail-10.10.5/
 public/data/champion-images/
+
+# Development scripts
 scripts/

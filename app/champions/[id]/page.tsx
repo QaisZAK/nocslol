@@ -155,10 +155,18 @@ export default function ChampionDetailPage({ params }: { params: Promise<{ id: s
           <div className="lg:col-span-1">
             <div className="lol-card p-6 mb-6">
               <img
-                src={champion.image}
+                src={`https://ddragon.leagueoflegends.com/cdn/15.17.1/img/champion/${champion.id}.png`}
                 alt={champion.name}
                 className="w-full rounded-lg mb-4"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement
+                  target.style.display = 'none'
+                  target.nextElementSibling?.classList.remove('hidden')
+                }}
               />
+              <div className="hidden w-full h-64 rounded-lg bg-lol-dark flex items-center justify-center text-lol-accent font-bold text-lg">
+                {champion.name}
+              </div>
               
               {/* CS Summary Stats */}
               <div className="space-y-4">

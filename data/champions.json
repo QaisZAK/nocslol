@@ -1,0 +1,224 @@
+{
+  "champions": [
+    {
+      "id": "ahri",
+      "name": "Ahri",
+      "title": "the Nine-Tailed Fox",
+      "image": "https://ddragon.leagueoflegends.com/cdn/img/champion/centered/Ahri_0.jpg",
+      "csMechanics": {
+        "abilities": [
+          {
+            "key": "Q",
+            "name": "Orb of Deception",
+            "givesCS": true,
+            "description": "Killing minions with this ability gives CS",
+            "notes": "Use carefully - only damages minions without killing them to avoid CS gain"
+          },
+          {
+            "key": "W",
+            "name": "Fox-Fire",
+            "givesCS": false,
+            "description": "Does not give CS even if it kills minions",
+            "notes": "Safe to use for harass without CS gain"
+          },
+          {
+            "key": "E",
+            "name": "Charm",
+            "givesCS": false,
+            "description": "Does not give CS even if it kills minions",
+            "notes": "Safe to use for crowd control without CS gain"
+          },
+          {
+            "key": "R",
+            "name": "Spirit Rush",
+            "givesCS": false,
+            "description": "Does not give CS even if it kills minions",
+            "notes": "Safe to use for mobility and damage without CS gain"
+          }
+        ],
+        "basicAttacks": {
+          "givesCS": true,
+          "description": "Basic attacks on minions give CS",
+          "notes": "Avoid attacking minions directly"
+        },
+        "strategy": "Focus on using W, E, and R for utility and damage. Only use Q when you're certain it won't kill minions."
+      }
+    },
+    {
+      "id": "jhin",
+      "name": "Jhin",
+      "title": "the Virtuoso",
+      "image": "https://ddragon.leagueoflegends.com/cdn/img/champion/centered/Jhin_0.jpg",
+      "csMechanics": {
+        "abilities": [
+          {
+            "key": "Q",
+            "name": "Dancing Grenade",
+            "givesCS": true,
+            "description": "Killing minions with this ability gives CS",
+            "notes": "Avoid using on low health minions"
+          },
+          {
+            "key": "W",
+            "name": "Deadly Flourish",
+            "givesCS": false,
+            "description": "Does not give CS even if it kills minions",
+            "notes": "Safe to use for long-range damage without CS gain"
+          },
+          {
+            "key": "E",
+            "name": "Captive Audience",
+            "givesCS": true,
+            "description": "Destroying enemy flowers gives 1 CS",
+            "notes": "CRITICAL: Avoid destroying enemy flowers as they give CS"
+          },
+          {
+            "key": "R",
+            "name": "Curtain Call",
+            "givesCS": false,
+            "description": "Does not give CS even if it kills minions",
+            "notes": "Safe to use for long-range damage without CS gain"
+          }
+        ],
+        "basicAttacks": {
+          "givesCS": true,
+          "description": "Basic attacks on minions give CS",
+          "notes": "Avoid attacking minions directly"
+        },
+        "strategy": "CRITICAL: Never destroy enemy flowers (E ability) as they give CS. Use W and R for damage without CS gain."
+      }
+    },
+    {
+      "id": "thresh",
+      "name": "Thresh",
+      "title": "the Chain Warden",
+      "image": "https://ddragon.leagueoflegends.com/cdn/img/champion/centered/Thresh_0.jpg",
+      "csMechanics": {
+        "abilities": [
+          {
+            "key": "Q",
+            "name": "Death Sentence",
+            "givesCS": false,
+            "description": "Does not give CS even if it kills minions",
+            "notes": "Safe to use for crowd control without CS gain"
+          },
+          {
+            "key": "W",
+            "name": "Dark Passage",
+            "givesCS": false,
+            "description": "Does not give CS even if it kills minions",
+            "notes": "Safe to use for utility without CS gain"
+          },
+          {
+            "key": "E",
+            "name": "Flay",
+            "givesCS": true,
+            "description": "Killing minions with this ability gives CS",
+            "notes": "Use carefully - only for positioning without killing minions"
+          },
+          {
+            "key": "R",
+            "name": "The Box",
+            "givesCS": false,
+            "description": "Does not give CS even if it kills minions",
+            "notes": "Safe to use for crowd control without CS gain"
+          }
+        ],
+        "basicAttacks": {
+          "givesCS": true,
+          "description": "Basic attacks on minions give CS",
+          "notes": "Avoid attacking minions directly"
+        },
+        "strategy": "Use Q, W, and R for utility and crowd control. Use E only for positioning without killing minions."
+      }
+    },
+    {
+      "id": "lux",
+      "name": "Lux",
+      "title": "the Lady of Luminosity",
+      "image": "https://ddragon.leagueoflegends.com/cdn/img/champion/centered/Lux_0.jpg",
+      "csMechanics": {
+        "abilities": [
+          {
+            "key": "Q",
+            "name": "Light Binding",
+            "givesCS": true,
+            "description": "Killing minions with this ability gives CS",
+            "notes": "Use carefully - only for crowd control without killing minions"
+          },
+          {
+            "key": "W",
+            "name": "Prismatic Barrier",
+            "givesCS": false,
+            "description": "Does not give CS even if it kills minions",
+            "notes": "Safe to use for shielding without CS gain"
+          },
+          {
+            "key": "E",
+            "name": "Lucent Singularity",
+            "givesCS": true,
+            "description": "Killing minions with this ability gives CS",
+            "notes": "Use carefully - only for zone control without killing minions"
+          },
+          {
+            "key": "R",
+            "name": "Final Spark",
+            "givesCS": false,
+            "description": "Does not give CS even if it kills minions",
+            "notes": "Safe to use for long-range damage without CS gain"
+          }
+        ],
+        "basicAttacks": {
+          "givesCS": true,
+          "description": "Basic attacks on minions give CS",
+          "notes": "Avoid attacking minions directly"
+        },
+        "strategy": "Use W and R for damage and utility. Use Q and E only for crowd control and zone control without killing minions."
+      }
+    },
+    {
+      "id": "yasuo",
+      "name": "Yasuo",
+      "title": "the Unforgiven",
+      "image": "https://ddragon.leagueoflegends.com/cdn/img/champion/centered/Yasuo_0.jpg",
+      "csMechanics": {
+        "abilities": [
+          {
+            "key": "Q",
+            "name": "Steel Tempest",
+            "givesCS": true,
+            "description": "Killing minions with this ability gives CS",
+            "notes": "Use carefully - only for combat without killing minions"
+          },
+          {
+            "key": "W",
+            "name": "Wind Wall",
+            "givesCS": false,
+            "description": "Does not give CS even if it kills minions",
+            "notes": "Safe to use for defense without CS gain"
+          },
+          {
+            "key": "E",
+            "name": "Sweeping Blade",
+            "givesCS": false,
+            "description": "Does not give CS even if it kills minions",
+            "notes": "Safe to use for mobility without CS gain"
+          },
+          {
+            "key": "R",
+            "name": "Last Breath",
+            "givesCS": false,
+            "description": "Does not give CS even if it kills minions",
+            "notes": "Safe to use for damage without CS gain"
+          }
+        ],
+        "basicAttacks": {
+          "givesCS": true,
+          "description": "Basic attacks on minions give CS",
+          "notes": "Avoid attacking minions directly"
+        },
+        "strategy": "Use W, E, and R for utility and damage. Use Q only for combat without killing minions."
+      }
+    }
+  ]
+}
