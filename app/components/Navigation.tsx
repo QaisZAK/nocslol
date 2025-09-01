@@ -10,10 +10,10 @@ export default function Navigation() {
   const pathname = usePathname()
 
             const navigation = [
-            { name: 'Live', href: '/live-game', icon: Zap },
+            { name: 'Live', href: '/live', icon: Zap },
             { name: 'Champions', href: '/champions', icon: Users },
-            { name: 'Guide', href: '/cs-mechanics', icon: BookOpen },
-            { name: 'Submit', href: '/submit-info', icon: Upload },
+            { name: 'Guide', href: '/guide', icon: BookOpen },
+            { name: 'Submit', href: '/submit', icon: Upload },
           ]
 
   const isActive = (href: string) => {
