@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { getAbilityImageUrl, getPassiveImageUrl } from '../champion-image-filenames'
 import { Heart, Sword, Target, Zap, Shield, Eye, Filter, SortAsc, SortDesc, User } from 'lucide-react'
 import { getSummonerSpellImageUrl, getSummonerSpellName } from '../summoner-spells'
@@ -44,6 +45,26 @@ interface ChampionAnalysis {
     notes: string
   }[]
   basicAttacksDangerous: boolean
+  passiveGivesCS?: boolean
+  passiveDetails?: {
+    name: string
+    notes: string
+  } | null
+  specialCase?: 'safe-no-allies' | 'dangerous-with-allies'
+  dangerousAlliedChampions?: {
+    name: string
+    dangerousAbilities: string[]
+    abilityDetails?: {
+      key: string
+      name: string
+      notes: string
+    }[]
+    passiveGivesCS: boolean
+    passiveDetails?: {
+      name: string
+      notes: string
+    } | null
+  }[]
 }
 
 interface MatchData {
@@ -228,7 +249,8 @@ interface MatchData {
   missions: any
 }
 
-export default function LiveGamePage() {
+function LiveGameContent() {
+  const searchParams = useSearchParams()
   const [searchInput, setSearchInput] = useState('')
   const [summonerData, setSummonerData] = useState<SummonerData | null>(null)
   const [liveGame, setLiveGame] = useState<LiveGameData | null>(null)
@@ -240,9 +262,31 @@ export default function LiveGamePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // Handle URL parameters for direct summoner search
+  useEffect(() => {
+    const region = searchParams.get('region')
+    const summoner = searchParams.get('summoner')
+    const tag = searchParams.get('tag')
+    
+    if (region && summoner) {
+      // Decode URL-encoded parameters
+      const decodedSummoner = decodeURIComponent(summoner)
+      const decodedTag = tag ? decodeURIComponent(tag) : region
+      
+      // If tag is provided separately, use it, otherwise assume region is the tag
+      const fullSummonerName = tag ? `${decodedSummoner}#${decodedTag}` : `${decodedSummoner}#${region}`
+      setSearchInput(fullSummonerName)
+      // Auto-search after a short delay to ensure state is set
+      setTimeout(() => {
+        handleSearch(fullSummonerName)
+      }, 100)
+    }
+  }, [searchParams])
 
-  const handleSearch = async () => {
-    if (!searchInput.trim()) {
+
+  const handleSearch = async (searchValue?: string) => {
+    const inputToSearch = searchValue || searchInput
+    if (!inputToSearch.trim()) {
       setError('Please enter a summoner name')
       return
     }
@@ -256,7 +300,7 @@ export default function LiveGamePage() {
 
     try {
       // Search for summoner using the full input (backend will split by #)
-      const summonerResponse = await fetch(`/api/riot/summoner?name=${encodeURIComponent(searchInput)}`)
+      const summonerResponse = await fetch(`/api/riot/summoner?name=${encodeURIComponent(inputToSearch)}`)
       
       if (!summonerResponse.ok) {
         const errorData = await summonerResponse.json()
@@ -264,7 +308,6 @@ export default function LiveGamePage() {
       }
 
       const summoner = await summonerResponse.json()
-      console.log('Summoner data received:', summoner)
       setSummonerData(summoner)
 
       // Check for live game
@@ -276,14 +319,11 @@ export default function LiveGamePage() {
           
           // Get champion analysis for the live game
           const championNames = gameData.participants.map((p: any) => p.championName)
-          console.log('Getting analysis for champions:', championNames)
-          const analysis = await getChampionAnalysis(championNames)
-          console.log('Analysis result:', analysis)
+          const analysis = await getChampionAnalysis(championNames, gameData.participants)
           setChampionAnalysis(analysis)
         }
       } catch (error) {
         // No live game found, this is normal
-        console.log('No live game found')
         setChampionAnalysis([])
       }
 
@@ -294,9 +334,25 @@ export default function LiveGamePage() {
     }
   }
 
-  const getChampionAnalysis = async (championNames: string[]): Promise<ChampionAnalysis[]> => {
+  const getChampionAnalysis = async (championNames: string[], participants: any[]): Promise<ChampionAnalysis[]> => {
     try {
-      const response = await fetch(`/api/riot/champion-analysis?champions=${championNames.join(',')}`)
+      // Find the user's team ID
+      const userTeamId = participants.find((p: any) => {
+        if (!summonerData?.riotId) return false
+        const gameName = summonerData.riotId.split('#')[0]
+        return p.summonerName.includes(gameName)
+      })?.teamId
+
+      // Separate champions into enemy and allied teams
+      const enemyChampions = participants
+        .filter((p: any) => userTeamId && p.teamId !== userTeamId)
+        .map((p: any) => p.championName)
+      
+      const alliedChampions = participants
+        .filter((p: any) => userTeamId && p.teamId === userTeamId)
+        .map((p: any) => p.championName)
+
+      const response = await fetch(`/api/riot/champion-analysis?champions=${championNames.join(',')}&enemyChampions=${enemyChampions.join(',')}&alliedChampions=${alliedChampions.join(',')}`)
       if (response.ok) {
         const data = await response.json()
         return data.analysis
@@ -314,7 +370,11 @@ export default function LiveGamePage() {
        dangerousAbilities: [],
        abilityDetails: [],
        notes: 'Analysis unavailable. Use caution with abilities near minions.',
-       basicAttacksDangerous: true
+       basicAttacksDangerous: true,
+       passiveGivesCS: false,
+       passiveDetails: null,
+       specialCase: undefined,
+       dangerousAlliedChampions: undefined
      }))
   }
 
@@ -328,9 +388,30 @@ export default function LiveGamePage() {
     return `https://ddragon.leagueoflegends.com/cdn/15.17.1/img/profileicon/${profileIconId}.png`
   }
 
+  // Map champion names to their Data Dragon API names
+  const championNameMap: { [key: string]: string } = {
+    'Wukong': 'MonkeyKing',
+    'Fiddlesticks': 'FiddleSticks',
+    'Cho\'Gath': 'Chogath',
+    'Kai\'Sa': 'Kaisa',
+    'Kha\'Zix': 'Khazix',
+    'Kog\'Maw': 'KogMaw',
+    'LeBlanc': 'Leblanc',
+    'Rek\'Sai': 'RekSai',
+    'Vel\'Koz': 'Velkoz',
+    'Xin Zhao': 'XinZhao'
+  }
+
+  const getMappedChampionName = (championName: string) => {
+    return championNameMap[championName] || championName
+  }
+
   const getChampionImageUrl = (championName: string) => {
+    // Use mapped name if available, otherwise use original name
+    const mappedName = getMappedChampionName(championName)
+    
     // Convert champion name to URL-friendly format
-    const formattedName = championName
+    const formattedName = mappedName
       .replace(/['\s]/g, '') // Remove apostrophes and spaces
       .replace(/\./g, '') // Remove dots
       .replace(/&/g, '') // Remove ampersands
@@ -445,7 +526,7 @@ export default function LiveGamePage() {
             </div>
             <div className="flex items-end">
               <button
-                onClick={handleSearch}
+                onClick={() => handleSearch()}
                 disabled={loading}
                 className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-slate-600 disabled:to-slate-700 rounded-xl font-medium transition-all duration-200 transform hover:scale-105 disabled:transform-none shadow-lg"
               >
@@ -524,12 +605,6 @@ export default function LiveGamePage() {
                           const summonerTeamId = liveGame.participants.find((p2: any) => {
                             const gameName = summonerData.riotId.split('#')[0]
                             const matches = p2.summonerName.includes(gameName)
-                            console.log('Team matching:', {
-                              participantName: p2.summonerName,
-                              gameName,
-                              matches,
-                              teamId: p2.teamId
-                            })
                             return matches
                           })?.teamId
                           
@@ -543,7 +618,11 @@ export default function LiveGamePage() {
                              notes: 'Analysis unavailable',
                              dangerousAbilities: [],
                              abilityDetails: [],
-                             basicAttacksDangerous: true
+                             basicAttacksDangerous: true,
+                             passiveGivesCS: false,
+                             passiveDetails: null,
+                             specialCase: undefined,
+                             dangerousAlliedChampions: undefined
                            }
                           return analysis
                         })
@@ -592,49 +671,176 @@ export default function LiveGamePage() {
                                     <div className="text-sm text-red-300 font-medium mb-2">
                                       ⚠️ Dangerous Champion
                                     </div>
-                                                                         <div className="text-sm text-red-400 font-medium mb-2">
-                                       Watch out for:
-                                     </div>
-                                     <div className="space-y-2">
-                                       {analysis.abilityDetails?.map((ability, idx) => (
-                                         <div key={idx} className="flex items-center gap-2 p-2 bg-red-500/20 rounded-lg border border-red-500/30">
-                                           <img 
-                                             src={getAbilityImageUrl(analysis.name, ability.key)} 
-                                             alt={`${ability.key} - ${ability.name}`}
-                                             className="w-6 h-6 rounded"
-                                             onError={(e) => {
-                                               e.currentTarget.style.display = 'none'
-                                             }}
-                                           />
-                                           <div className="flex-1">
-                                             <span className="text-xs font-medium text-red-300">
-                                               {ability.key} - {ability.name}
-                                             </span>
-                                             {ability.notes && (
-                                               <p className="text-xs text-red-200/80 mt-1">
-                                                 {ability.notes}
-                                               </p>
-                                             )}
-                                           </div>
-                                         </div>
-                                       )) || analysis.dangerousAbilities.map((abilityKey, idx) => (
-                                         <div key={idx} className="flex items-center gap-2 p-2 bg-red-500/20 rounded-lg border border-red-500/30">
-                                           <img 
-                                             src={getAbilityImageUrl(analysis.name, abilityKey)} 
-                                             alt={`${abilityKey}`}
-                                             className="w-6 h-6 rounded"
-                                             onError={(e) => {
-                                               e.currentTarget.style.display = 'none'
-                                             }}
-                                           />
-                                           <div className="flex-1">
-                                             <span className="text-xs font-medium text-red-300">
-                                               {abilityKey}
-                                             </span>
-                                           </div>
-                                         </div>
-                                       ))}
-                                     </div>
+                                    
+                                    {/* Special case handling for Sylas/Viego */}
+                                    {analysis.specialCase === 'dangerous-with-allies' && analysis.dangerousAlliedChampions && (
+                                      <div className="mb-4">
+                                        <div className="text-sm text-red-400 font-medium mb-2">
+                                          Watch out for this champion AND your allies:
+                                        </div>
+                                        
+                                        {/* Enemy champion abilities */}
+                                        <div className="space-y-2 mb-3">
+                                          <div className="text-xs text-red-300 font-medium">This champion's dangerous abilities:</div>
+                                          {analysis.abilityDetails?.map((ability, idx) => (
+                                            <div key={idx} className="flex items-center gap-2 p-2 bg-red-500/20 rounded-lg border border-red-500/30">
+                                              <img 
+                                                src={getAbilityImageUrl(getMappedChampionName(analysis.name), ability.key)} 
+                                                alt={`${ability.key} - ${ability.name}`}
+                                                className="w-6 h-6 rounded"
+                                                onError={(e) => {
+                                                  e.currentTarget.style.display = 'none'
+                                                }}
+                                              />
+                                              <div className="flex-1">
+                                                <span className="text-xs font-medium text-red-300">
+                                                  {ability.key} - {ability.name}
+                                                </span>
+                                                {ability.notes && (
+                                                  <p className="text-xs text-red-200/80 mt-1">
+                                                    {ability.notes}
+                                                  </p>
+                                                )}
+                                              </div>
+                                            </div>
+                                          ))}
+                                          {analysis.passiveGivesCS && analysis.passiveDetails && (
+                                            <div className="flex items-center gap-2 p-2 bg-red-500/20 rounded-lg border border-red-500/30">
+                                              <div className="w-6 h-6 bg-red-500/30 rounded flex items-center justify-center">
+                                                <span className="text-xs text-red-300 font-bold">P</span>
+                                              </div>
+                                              <div className="flex-1">
+                                                <span className="text-xs font-medium text-red-300">
+                                                  {analysis.passiveDetails.name}
+                                                </span>
+                                                {analysis.passiveDetails.notes && (
+                                                  <p className="text-xs text-red-200/80 mt-1">
+                                                    {analysis.passiveDetails.notes}
+                                                  </p>
+                                                )}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                        
+                                        {/* Allied champion abilities */}
+                                        <div className="space-y-2">
+                                          <div className="text-xs text-orange-300 font-medium">Your allies' dangerous abilities:</div>
+                                          {analysis.dangerousAlliedChampions.map((ally, allyIdx) => (
+                                            <div key={allyIdx} className="space-y-1">
+                                              <div className="text-xs text-orange-200 font-medium">{ally.name}:</div>
+                                              {ally.abilityDetails?.map((ability, idx) => (
+                                                <div key={idx} className="flex items-center gap-2 p-2 bg-orange-500/20 rounded-lg border border-orange-500/30 ml-2">
+                                                  <img 
+                                                    src={getAbilityImageUrl(getMappedChampionName(ally.name), ability.key)} 
+                                                    alt={`${ability.key} - ${ability.name}`}
+                                                    className="w-5 h-5 rounded"
+                                                    onError={(e) => {
+                                                      e.currentTarget.style.display = 'none'
+                                                    }}
+                                                  />
+                                                  <div className="flex-1">
+                                                    <span className="text-xs font-medium text-orange-300">
+                                                      {ability.key} - {ability.name}
+                                                    </span>
+                                                    {ability.notes && (
+                                                      <p className="text-xs text-orange-200/80 mt-1">
+                                                        {ability.notes}
+                                                      </p>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              ))}
+                                              {ally.passiveGivesCS && ally.passiveDetails && (
+                                                <div className="flex items-center gap-2 p-2 bg-orange-500/20 rounded-lg border border-orange-500/30 ml-2">
+                                                  <div className="w-5 h-5 bg-orange-500/30 rounded flex items-center justify-center">
+                                                    <span className="text-xs text-orange-300 font-bold">P</span>
+                                                  </div>
+                                                  <div className="flex-1">
+                                                    <span className="text-xs font-medium text-orange-300">
+                                                      {ally.passiveDetails.name}
+                                                    </span>
+                                                    {ally.passiveDetails.notes && (
+                                                      <p className="text-xs text-orange-200/80 mt-1">
+                                                        {ally.passiveDetails.notes}
+                                                      </p>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                    
+                                    {/* Regular dangerous champion display */}
+                                    {analysis.specialCase !== 'dangerous-with-allies' && (
+                                      <>
+                                        <div className="text-sm text-red-400 font-medium mb-2">
+                                          Watch out for:
+                                        </div>
+                                        <div className="space-y-2">
+                                          {analysis.abilityDetails?.map((ability, idx) => (
+                                            <div key={idx} className="flex items-center gap-2 p-2 bg-red-500/20 rounded-lg border border-red-500/30">
+                                              <img 
+                                                src={getAbilityImageUrl(getMappedChampionName(analysis.name), ability.key)} 
+                                                alt={`${ability.key} - ${ability.name}`}
+                                                className="w-6 h-6 rounded"
+                                                onError={(e) => {
+                                                  e.currentTarget.style.display = 'none'
+                                                }}
+                                              />
+                                              <div className="flex-1">
+                                                <span className="text-xs font-medium text-red-300">
+                                                  {ability.key} - {ability.name}
+                                                </span>
+                                                {ability.notes && (
+                                                  <p className="text-xs text-red-200/80 mt-1">
+                                                    {ability.notes}
+                                                  </p>
+                                                )}
+                                              </div>
+                                            </div>
+                                          ))}
+                                          {analysis.passiveGivesCS && analysis.passiveDetails && (
+                                            <div className="flex items-center gap-2 p-2 bg-red-500/20 rounded-lg border border-red-500/30">
+                                              <div className="w-6 h-6 bg-red-500/30 rounded flex items-center justify-center">
+                                                <span className="text-xs text-red-300 font-bold">P</span>
+                                              </div>
+                                              <div className="flex-1">
+                                                <span className="text-xs font-medium text-red-300">
+                                                  {analysis.passiveDetails.name}
+                                                </span>
+                                                {analysis.passiveDetails.notes && (
+                                                  <p className="text-xs text-red-200/80 mt-1">
+                                                    {analysis.passiveDetails.notes}
+                                                  </p>
+                                                )}
+                                              </div>
+                                            </div>
+                                          )}
+                                          {analysis.dangerousAbilities.map((abilityKey, idx) => (
+                                            <div key={idx} className="flex items-center gap-2 p-2 bg-red-500/20 rounded-lg border border-red-500/30">
+                                              <img 
+                                                src={getAbilityImageUrl(getMappedChampionName(analysis.name), abilityKey)} 
+                                                alt={`${abilityKey}`}
+                                                className="w-6 h-6 rounded"
+                                                onError={(e) => {
+                                                  e.currentTarget.style.display = 'none'
+                                                }}
+                                              />
+                                              <div className="flex-1">
+                                                <span className="text-xs font-medium text-red-300">
+                                                  {abilityKey}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </>
+                                    )}
+                                    
                                     {analysis.notes && (
                                       <div className="text-sm text-amber-200 bg-amber-500/20 rounded-lg p-3 border border-amber-500/30">
                                         {analysis.notes}
@@ -647,7 +853,7 @@ export default function LiveGamePage() {
                                       ✅ Safe Champion
                                     </div>
                                     <div className="text-sm text-green-200">
-                                      This champion appears to be safe.
+                                      {analysis.specialCase === 'safe-no-allies' ? analysis.notes : 'This champion appears to be safe.'}
                                     </div>
                                   </div>
                                 )}
@@ -669,13 +875,15 @@ export default function LiveGamePage() {
                 )}
 
                 {/* Previous Matches Section */}
-        {matchHistory.length > 0 && (
+        {matchHistory.filter(match => match.gameMode !== 'CHERRY').length > 0 && (
           <div className="mt-8">
             <h2 className="text-2xl font-bold text-white mb-6 text-center">
               Previous Low CS Matches
             </h2>
             <div className="space-y-4">
-              {matchHistory.map((match, index) => {
+              {matchHistory
+                .filter(match => match.gameMode !== 'CHERRY') // Filter out Arena matches
+                .map((match, index) => {
                 const isZeroCS = match.cs === 0
                 const cardBackground = isZeroCS 
                   ? 'bg-gradient-to-br from-amber-800/30 via-yellow-700/20 to-amber-900/40' 
@@ -736,7 +944,7 @@ export default function LiveGamePage() {
                             {match.win ? 'Victory' : 'Defeat'}
                           </div>
                           <p className={`text-sm mt-1 ${isZeroCS ? 'text-amber-200' : textColor}`}>
-                            {match.gameMode === 'CHERRY' ? 'Arena' : match.gameMode === 'CLASSIC' ? 'Solo/Duo' : match.gameMode}
+                            {match.gameMode === 'CLASSIC' ? 'Solo/Duo' : match.gameMode}
                           </p>
                         </div>
                       </div>
@@ -1466,5 +1674,20 @@ export default function LiveGamePage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function LiveGamePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-slate-300">Loading live game analysis...</p>
+        </div>
+      </div>
+    }>
+      <LiveGameContent />
+    </Suspense>
   )
 }

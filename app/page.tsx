@@ -55,7 +55,7 @@ export default function HomePage() {
               <Sword className="inline-block w-5 h-5 mr-2 group-hover:animate-pulse" />
               Browse Champions
             </Link>
-            <Link href="/cs-mechanics" className="lol-button-secondary text-lg group">
+                            <Link href="/guide" className="lol-button-secondary text-lg group">
               <BookOpen className="inline-block w-5 h-5 mr-2 group-hover:animate-bounce" />
               Learn CS Mechanics
             </Link>
@@ -166,7 +166,7 @@ export default function HomePage() {
               </p>
             </Link>
             
-                         <Link href="/cs-mechanics" className="lol-card p-6 text-center group hover:scale-105 transition-transform cursor-pointer">
+                         <Link href="/guide" className="lol-card p-6 text-center group hover:scale-105 transition-transform cursor-pointer">
                <BookOpen className="w-12 h-12 text-lol-gold mx-auto mb-4 group-hover:animate-bounce" />
                <h3 className="text-lg font-semibold text-lol-accent mb-2">CS Mechanics Guide</h3>
                <p className="text-sm text-lol-accent/70">
@@ -174,7 +174,7 @@ export default function HomePage() {
                </p>
              </Link>
              
-             <Link href="/submit-info" className="lol-card p-6 text-center group hover:scale-105 transition-transform cursor-pointer">
+             <Link href="/submit" className="lol-card p-6 text-center group hover:scale-105 transition-transform cursor-pointer">
                <Upload className="w-12 h-12 text-lol-gold mx-auto mb-4 group-hover:animate-bounce" />
                <h3 className="text-lg font-semibold text-lol-accent mb-2">Submit Findings</h3>
                <p className="text-sm text-lol-accent/70">
@@ -182,7 +182,7 @@ export default function HomePage() {
                </p>
              </Link>
              
-             <Link href="/live-game" className="lol-card p-6 text-center group hover:scale-105 transition-transform cursor-pointer border-2 border-lol-gold/30">
+             <Link href="/live" className="lol-card p-6 text-center group hover:scale-105 transition-transform cursor-pointer border-2 border-lol-gold/30">
                <Zap className="w-12 h-12 text-lol-gold mx-auto mb-4 group-hover:animate-bounce" />
                <h3 className="text-lg font-semibold text-lol-accent mb-2">Live Game Lookup</h3>
                <p className="text-sm text-lol-accent/70">
@@ -240,7 +240,7 @@ export default function HomePage() {
               <Crown className="inline-block w-5 h-5 mr-2 group-hover:animate-pulse" />
               Start Your Journey
             </Link>
-            <Link href="/submit-info" className="lol-button-secondary text-lg group">
+                            <Link href="/submit" className="lol-button-secondary text-lg group">
               <Flame className="inline-block w-5 h-5 mr-2 group-hover:animate-bounce" />
               Share Your Wisdom
             </Link>

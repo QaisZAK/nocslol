@@ -38,8 +38,6 @@ export async function GET(request: NextRequest) {
 
     const gameData = await gameResponse.json()
     
-    console.log('Raw Riot API response:', JSON.stringify(gameData, null, 2))
-    
     // Get champion data to map champion IDs to names
     let championMap: { [key: number]: string } = {}
     try {
@@ -50,7 +48,6 @@ export async function GET(request: NextRequest) {
         championMap[champion.key] = champion.name
       })
     } catch (error) {
-      console.log('Failed to fetch latest champion data, using fallback:', error)
       // Fallback to a known working version
       try {
         const fallbackResponse = await fetch('https://ddragon.leagueoflegends.com/cdn/14.1.1/data/en_US/champion.json')
@@ -60,7 +57,6 @@ export async function GET(request: NextRequest) {
           championMap[champion.key] = champion.name
         })
       } catch (fallbackError) {
-        console.log('Fallback champion data also failed:', fallbackError)
                  // Use a minimal fallback map for common champions
          championMap = {
            98: 'Shen', 266: 'Aatrox', 103: 'Ahri', 84: 'Akali', 12: 'Alistar',
@@ -152,10 +148,9 @@ export async function GET(request: NextRequest) {
                }
              }
            }
-         } catch (error) {
-           console.log(`Failed to get rank for summoner ${participant.puuid}:`, error)
-           rank = 'Unranked'
-         }
+                 } catch (error) {
+          rank = 'Unranked'
+        }
         
                  return {
            summonerName: participant.riotId || participant.summonerName,
@@ -174,7 +169,7 @@ export async function GET(request: NextRequest) {
       platformId: gameData.platformId
     }
     
-    console.log('Transformed game data:', JSON.stringify(transformedGame, null, 2))
+
     
     return NextResponse.json(transformedGame)
   } catch (error) {

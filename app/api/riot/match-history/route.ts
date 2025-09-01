@@ -54,8 +54,6 @@ export async function GET(request: NextRequest) {
     }
 
     const matchIds = await matchIdsResponse.json()
-    
-    console.log(`Found ${matchIds.length} matches for region ${region} (routing: ${routingValue})`)
 
     // Get detailed match data for each match using v5 routing
     const matchPromises = matchIds.map(async (matchId: string) => {
@@ -77,86 +75,22 @@ export async function GET(request: NextRequest) {
 
     const matches = await Promise.all(matchPromises)
     const validMatches = matches.filter(match => match !== null)
-
-    console.log(`Processing ${validMatches.length} valid matches...`)
-    
-    // Debug: Log the structure of the first match to see what we're getting
-    if (validMatches.length > 0) {
-      const firstMatch = validMatches[0]
-      console.log('First match structure:', {
-        metadata: Object.keys(firstMatch.metadata || {}),
-        info: Object.keys(firstMatch.info || {}),
-        participantsCount: firstMatch.info?.participants?.length || 0
-      })
-      
-      if (firstMatch.info?.participants?.length > 0) {
-        const firstParticipant = firstMatch.info.participants[0]
-        console.log('First participant keys:', Object.keys(firstParticipant))
-        console.log('Sample participant data:', {
-          championName: firstParticipant.championName,
-          kills: firstParticipant.kills,
-          deaths: firstParticipant.deaths,
-          assists: firstParticipant.assists,
-          totalDamageDealtToChampions: firstParticipant.totalDamageDealtToChampions,
-          visionScore: firstParticipant.visionScore,
-          goldEarned: firstParticipant.goldEarned,
-          teamPosition: firstParticipant.teamPosition,
-          individualPosition: firstParticipant.individualPosition,
-          role: firstParticipant.role,
-          lane: firstParticipant.lane,
-          champLevel: firstParticipant.champLevel,
-          timePlayed: firstParticipant.timePlayed
-        })
-      }
-    }
     
     // Filter matches for 0-9 CS and transform data with ALL available information
     const lowCSMatches = validMatches
       .map(match => {
         const participant = match.info.participants.find((p: any) => p.puuid === puuid)
         if (!participant) {
-          console.log(`No participant found for PUUID ${puuid} in match ${match.metadata.matchId}`)
           return null
         }
 
         const cs = participant.totalMinionsKilled + participant.neutralMinionsKilled
-        console.log(`Match ${match.metadata.matchId}: ${participant.championName} - CS: ${cs} (minions: ${participant.totalMinionsKilled}, jungle: ${participant.neutralMinionsKilled})`)
         
         if (cs > 9) {
-          console.log(`  -> Excluded (CS > 9)`)
           return null
         }
         
-        console.log(`  -> Included (CS <= 9)`)
-        
-        // Debug: Log what we're actually getting from the API
-        console.log('Participant data sample:', {
-          championName: participant.championName,
-          kills: participant.kills,
-          deaths: participant.deaths,
-          assists: participant.assists,
-          totalDamageDealtToChampions: participant.totalDamageDealtToChampions,
-          visionScore: participant.visionScore,
-          goldEarned: participant.goldEarned,
-          teamPosition: participant.teamPosition,
-          individualPosition: participant.individualPosition,
-          role: participant.role,
-          lane: participant.lane,
-          champLevel: participant.champLevel,
-          timePlayed: participant.timePlayed
-        })
-        
-        // Debug: Check for alternative property names that might exist
-        console.log('Alternative property checks:', {
-          'participant.totalDamageDealtToChampions exists': !!participant.totalDamageDealtToChampions,
-          'participant.totalDamageDealt exists': !!participant.totalDamageDealt,
-          'participant.visionScore exists': !!participant.visionScore,
-          'participant.goldEarned exists': !!participant.goldEarned,
-          'participant.teamPosition exists': !!participant.teamPosition,
-          'participant.individualPosition exists': !!participant.individualPosition,
-          'participant.champLevel exists': !!participant.champLevel,
-          'participant.timePlayed exists': !!participant.timePlayed
-        })
+
         
         // Extract ALL available data from the participant
         return {
@@ -354,7 +288,7 @@ export async function GET(request: NextRequest) {
       .filter(match => match !== null)
       .sort((a, b) => b.gameCreation - a.gameCreation)
 
-    console.log(`Final result: ${lowCSMatches.length} low CS matches found out of ${validMatches.length} total matches`)
+
     
     return NextResponse.json({
       matches: lowCSMatches,
