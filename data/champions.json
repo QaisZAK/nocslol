@@ -19,21 +19,21 @@
             "name": "Fox-Fire",
             "givesCS": false,
             "description": "Does not give CS even if it kills minions",
-            "notes": "Safe to use for harass without CS gain"
+            "notes": "Safe to use for harass and damage"
           },
           {
             "key": "E",
             "name": "Charm",
             "givesCS": false,
             "description": "Does not give CS even if it kills minions",
-            "notes": "Safe to use for crowd control without CS gain"
+            "notes": "Safe to use for crowd control and engagement"
           },
           {
             "key": "R",
             "name": "Spirit Rush",
             "givesCS": false,
             "description": "Does not give CS even if it kills minions",
-            "notes": "Safe to use for mobility and damage without CS gain"
+            "notes": "Safe to use for mobility and damage"
           }
         ],
         "basicAttacks": {
@@ -63,7 +63,7 @@
             "name": "Deadly Flourish",
             "givesCS": false,
             "description": "Does not give CS even if it kills minions",
-            "notes": "Safe to use for long-range damage without CS gain"
+            "notes": "Safe to use for long-range damage"
           },
           {
             "key": "E",
@@ -77,7 +77,7 @@
             "name": "Curtain Call",
             "givesCS": false,
             "description": "Does not give CS even if it kills minions",
-            "notes": "Safe to use for long-range damage without CS gain"
+            "notes": "Safe to use for long-range damage"
           }
         ],
         "basicAttacks": {
