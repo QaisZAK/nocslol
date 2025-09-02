@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Sword, Users, Zap, Target, Shield, Star, BookOpen, Trophy, Skull, Heart, Flame, Crown, Upload } from 'lucide-react'
+import { Sword, Users, Zap, Target, Shield, Star, BookOpen, Trophy, Skull, Heart, Flame, Crown, Upload, Monitor } from 'lucide-react'
 
 export default function HomePage() {
   return (
@@ -182,13 +182,15 @@ export default function HomePage() {
                </p>
              </Link>
              
-             <Link href="/live" className="lol-card p-6 text-center group hover:scale-105 transition-transform cursor-pointer border-2 border-lol-gold/30">
-               <Zap className="w-12 h-12 text-lol-gold mx-auto mb-4 group-hover:animate-bounce" />
-               <h3 className="text-lg font-semibold text-lol-accent mb-2">Live Game Lookup</h3>
-               <p className="text-sm text-lol-accent/70">
-                 Check your match history. See how much of a legend you are. (Work in Progress 🔧)
+             <div className="lol-card p-6 text-center group opacity-50 cursor-not-allowed">
+               <Monitor className="w-12 h-12 text-lol-accent/50 mx-auto mb-4" />
+               <h3 className="text-lg font-semibold text-lol-accent/50 mb-2">Stream Overlay</h3>
+               <p className="text-sm text-lol-accent/50">
+                 Create custom NoCS overlays for your stream. (Temporarily Disabled)
                </p>
-             </Link>
+             </div>
+             
+            
             
             <div className="lol-card p-6 text-center group opacity-50 cursor-not-allowed">
               <Trophy className="w-12 h-12 text-lol-accent/50 mx-auto mb-4" />

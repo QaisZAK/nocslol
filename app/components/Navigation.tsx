@@ -3,16 +3,16 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, X, Sword, Zap, Users, Upload, BookOpen, ExternalLink } from 'lucide-react'
+import { Menu, X, Sword, Zap, Users, Upload, BookOpen, ExternalLink, HelpCircle, Monitor } from 'lucide-react'
 
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
 
             const navigation = [
-            { name: 'Live', href: '/live', icon: Zap },
             { name: 'Champions', href: '/champions', icon: Users },
             { name: 'Guide', href: '/guide', icon: BookOpen },
+            { name: 'Trivia', href: '/trivia', icon: HelpCircle },
             { name: 'Submit', href: '/submit', icon: Upload },
           ]
 
@@ -44,15 +44,12 @@ export default function Navigation() {
           <div className="hidden md:flex items-center space-x-1">
             {navigation.map((item) => {
               const Icon = item.icon
-              const isLive = item.name === 'Live'
               return (
                 <Link
                   key={item.name}
                   href={item.href}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
-                    isLive
-                      ? 'text-lol-gold hover:bg-lol-gold/20'
-                      : isActive(item.href)
+                    isActive(item.href)
                       ? 'bg-lol-gold text-lol-dark border border-lol-gold'
                       : 'text-lol-accent hover:bg-lol-gold/20 hover:text-lol-gold border border-transparent hover:border-lol-gold/30'
                   }`}
@@ -94,16 +91,13 @@ export default function Navigation() {
             <div className="px-2 pt-2 pb-3 space-y-1">
               {navigation.map((item) => {
                 const Icon = item.icon
-                const isLive = item.name === 'Live'
                 return (
                   <Link
                     key={item.name}
                     href={item.href}
                     onClick={() => setIsOpen(false)}
                     className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 ${
-                      isLive
-                        ? 'text-lol-gold hover:bg-lol-gold/20'
-                        : isActive(item.href)
+                      isActive(item.href)
                         ? 'bg-lol-gold text-lol-dark border border-lol-gold'
                         : 'text-lol-accent hover:bg-lol-gold/20 hover:text-lol-gold border border-transparent hover:border-lol-gold/30'
                     }`}

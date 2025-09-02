@@ -1,0 +1,20 @@
+/* Overlay-specific styles */
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  overflow: hidden;
+  font-family: Inter, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Ensure no default browser styles interfere */
+html, body, #__next {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
