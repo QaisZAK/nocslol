@@ -19,6 +19,8 @@ interface OverlayData {
   championMastery?: any[]
   challengesData?: any
   note?: string
+  totalMatchesFetched?: number
+  isMockData?: boolean
 }
 
 interface OverlayConfig {

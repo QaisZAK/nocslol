@@ -205,7 +205,7 @@ export async function GET(request: NextRequest) {
       }
       
       // For comprehensive data, we'll fetch in batches
-      let allMatchIds = []
+      let allMatchIds: string[] = []
       
       try {
         console.log(`Fetching match history for PUUID: ${puuid} using ${regionalRouting} routing, timeFilter: ${timeFilter}`)
@@ -410,7 +410,8 @@ export async function GET(request: NextRequest) {
         challengesData: challengesData,
         totalMatchesFetched: (allMatchIds ? allMatchIds.length : 0) + (cachedMatches ? cachedMatches.length : 0),
         lastUpdated: new Date().toISOString(),
-        isMockData: false
+        isMockData: false,
+        note: undefined as string | undefined
       }
       
       // If no recent games found, provide some sample NoCS data for demonstration
