@@ -26,6 +26,8 @@ interface DailyTrivia {
   champion: Champion
   ability: Ability
   date: string
+  nextReset: string
+  timeUntilNext: number
 }
 
 export default function TriviaPage() {
@@ -36,6 +38,7 @@ export default function TriviaPage() {
   const [hasAnswered, setHasAnswered] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [timeUntilNext, setTimeUntilNext] = useState<number>(0)
 
   // Fetch daily trivia from API
   const fetchDailyTrivia = async () => {
@@ -47,6 +50,7 @@ export default function TriviaPage() {
       }
       const trivia = await response.json()
       setDailyTrivia(trivia)
+      setTimeUntilNext(trivia.timeUntilNext)
       
       // Check if user has already answered today
       const answeredToday = localStorage.getItem(`trivia-${trivia.date}`)
@@ -63,29 +67,67 @@ export default function TriviaPage() {
     }
   }
 
+  // Countdown timer effect
+  useEffect(() => {
+    if (timeUntilNext <= 0) return
+
+    const timer = setInterval(() => {
+      setTimeUntilNext(prev => {
+        if (prev <= 1000) {
+          // Time's up, refresh the trivia
+          fetchDailyTrivia()
+          return 0
+        }
+        return prev - 1000
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [timeUntilNext])
+
   useEffect(() => {
     fetchDailyTrivia()
   }, [])
+
+  // Helper function to format time
+  const formatTime = (milliseconds: number): string => {
+    const totalSeconds = Math.floor(milliseconds / 1000)
+    const hours = Math.floor(totalSeconds / 3600)
+    const minutes = Math.floor((totalSeconds % 3600) / 60)
+    const seconds = totalSeconds % 60
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${seconds}s`
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds}s`
+    } else {
+      return `${seconds}s`
+    }
+  }
+
 
   const handleGuess = (guess: boolean) => {
     if (!dailyTrivia || hasAnswered) return
     
     setUserGuess(guess)
     setShowResult(true)
-    setIsCorrect(guess === dailyTrivia.ability.givesCS)
+    const correct = guess === dailyTrivia.ability.givesCS
+    setIsCorrect(correct)
     setHasAnswered(true)
     
-    // Store answer in localStorage
+    // Store answer in localStorage for daily mode
     localStorage.setItem(`trivia-${dailyTrivia.date}`, guess.toString())
   }
 
   const resetDaily = () => {
+    console.log('Resetting daily question...')
     setUserGuess(null)
     setShowResult(false)
     setIsCorrect(false)
     setHasAnswered(false)
     localStorage.removeItem(`trivia-${dailyTrivia?.date}`)
   }
+
 
   if (loading) {
     return (
@@ -128,10 +170,13 @@ export default function TriviaPage() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-lol-gold mb-2">Daily CS Trivia</h1>
+          <h1 className="text-4xl font-bold text-lol-gold mb-2">
+            Daily CS Trivia
+          </h1>
           <p className="text-lol-accent text-lg">
             Test your knowledge of champion abilities and CS mechanics!
           </p>
+          
           <p className="text-lol-accent/60 text-sm mt-2">
             {new Date(dailyTrivia.date).toLocaleDateString('en-US', { 
               weekday: 'long', 
@@ -140,6 +185,17 @@ export default function TriviaPage() {
               day: 'numeric' 
             })}
           </p>
+          
+          {/* Countdown Timer */}
+          <div className="mt-4 bg-lol-darker/50 rounded-lg p-4 border border-lol-gold/30 max-w-md mx-auto">
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-2 h-2 bg-lol-gold rounded-full animate-pulse"></div>
+              <span className="text-lol-accent text-sm">Next trivia in:</span>
+              <span className="text-lol-gold font-bold text-lg">
+                {formatTime(timeUntilNext)}
+              </span>
+            </div>
+          </div>
         </div>
 
                  {/* Champion Info */}
@@ -236,15 +292,15 @@ export default function TriviaPage() {
           )}
         </div>
 
-        {/* Reset Button */}
+        {/* Action Buttons */}
         {hasAnswered && (
           <div className="text-center">
             <button
-              onClick={resetDaily}
+              onClick={() => resetDaily()}
               className="flex items-center space-x-2 px-6 py-3 bg-lol-gold/20 hover:bg-lol-gold/30 text-lol-gold rounded-lg font-medium transition-colors border border-lol-gold/30"
             >
               <RotateCcw className="w-4 h-4" />
-              <span>Reset for Today</span>
+              <span>Try Again</span>
             </button>
           </div>
         )}
@@ -253,10 +309,12 @@ export default function TriviaPage() {
         <div className="mt-12 bg-lol-darker rounded-lg p-6 border border-lol-gold/30">
           <h3 className="text-xl font-semibold text-lol-gold mb-4">How it works:</h3>
           <ul className="space-y-2 text-lol-accent">
-            <li>• A new champion ability is selected each day</li>
+            <li>• <span className="text-lol-gold font-semibold">Daily Mode:</span> One question per day</li>
+            <li>• A new champion is selected each day from a curated list</li>
             <li>• You need to guess whether the ability gives CS</li>
             <li>• You can only answer once per day</li>
-            <li>• Come back tomorrow for a new challenge!</li>
+            <li>• Champions rotate daily - no repeats until all are used</li>
+            <li>• New trivia appears at midnight every day</li>
           </ul>
         </div>
       </div>
