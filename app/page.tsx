@@ -70,6 +70,25 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Disclaimer Section */}
+      <section className="py-12 px-4 bg-lol-darker/50 border-y border-lol-gold/20">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="bg-lol-dark/30 rounded-xl p-6 border border-lol-gold/30">
+            <h2 className="text-2xl font-bold text-lol-gold mb-4 flex items-center justify-center gap-3">
+              <Heart className="w-6 h-6" />
+              Fan-Made Website
+            </h2>
+            <p className="text-lg text-lol-accent/80 mb-4">
+              This website is <span className="text-lol-red font-bold">NOT</span> made by Bardinette.
+            </p>
+            <p className="text-base text-lol-accent/70 max-w-2xl mx-auto">
+              This is a fan-made website created by a viewer of Bardinette and a fan of having fun in League of Legends, 
+              inspired by Bardinette's content and the NoCS challenge.
+            </p>
+          </div>
+        </div>
+      </section>
+
              {/* What is NoCS Section */}
        <section className="py-20 px-4 bg-lol-darker">
          <div className="max-w-6xl mx-auto">
